@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+gunicorn
+pandas
+azure-data-tables
+azure-core
+bcrypt
+jinja2
+playwright
+PyYAML

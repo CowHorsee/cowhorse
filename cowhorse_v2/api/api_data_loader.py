@@ -2,46 +2,26 @@ import logging
 import json
 import os
 import pandas as pd
-import uuid
-from azure.data.tables import TableServiceClient
-import azure.functions as func
-from azure_functions_openapi.decorator import openapi
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse, PlainTextResponse
 
-bp = func.Blueprint(name='data_loader', url_prefix='/data-loader')
+router = APIRouter(prefix="/api/data-loader", tags=["Maintenance"])
 
 from sharedlib.db_helper.db_ops import DBHelper, sanitize_key
 
-@bp.route(route="run", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
-@openapi(
-    summary="Migrate CSV datasets to Azure Table Storage",
-    description="Iterates through all CSV files in api/dataset/ and uploads them to Azure Storage Tables using batch transactions and DBHelper mappings.",
-    tags=["Maintenance"],
-    route="/api/data-loader/run",
-    method="POST",
-    operation_id="runDataLoader",
-    response={
-        200: {
-            "description": "Datasets loaded successfully",
-            "content": {"application/json": {"schema": {"type": "object", "properties": {
-                "message": {"type": "string", "example": "Data migration complete"},
-                "details": {"type": "object", "additionalProperties": {"type": "string"}, "description": "Row counts per table", "example": {"user": "Loaded 50 rows.", "item": "Loaded 200 rows."}}
-            }}}}
-        },
-        500: {"description": "Failed to load datasets or connection string missing"},
-    },
-)
-def run_data_loader(req: func.HttpRequest) -> func.HttpResponse:
+@router.post("/run")
+def run_data_loader():
     logging.info("Starting data loading process with batching and DBHelper logic.")
     
     dataset_dir = os.path.join(os.path.dirname(__file__), 'dataset')
     if not os.path.exists(dataset_dir):
-        return func.HttpResponse(f"Dataset directory not found at {dataset_dir}", status_code=500)
+        return PlainTextResponse(f"Dataset directory not found at {dataset_dir}", status_code=500)
 
     results = {}
     try:
         db = DBHelper()
         if not db.service_client:
-            return func.HttpResponse("Azure Storage Connection String not configured.", status_code=500)
+            return PlainTextResponse("Azure Storage Connection String not configured.", status_code=500)
 
         for filename in os.listdir(dataset_dir):
             if filename.endswith(".csv"):
@@ -70,8 +50,8 @@ def run_data_loader(req: func.HttpRequest) -> func.HttpResponse:
                         entity["PartitionKey"] = "DATA"
 
                     # 2. Set RowKey (aligned with db_ops.load)
-                    if rk_col in entity and pd.notna(row[rk_col]):
-                        entity["RowKey"] = sanitize_key(row[rk_col])
+                    if rk_col in entity and pd.notna(entity[rk_col]):
+                        entity["RowKey"] = sanitize_key(entity[rk_col])
                     else:
                         entity["RowKey"] = f"row_{index}"
                     
@@ -96,12 +76,8 @@ def run_data_loader(req: func.HttpRequest) -> func.HttpResponse:
                 
                 results[table_name] = f"Loaded {rows_loaded} rows."
 
-        return func.HttpResponse(
-            json.dumps({"message": "Data migration complete", "details": results}, indent=2),
-            status_code=200,
-            mimetype="application/json"
-        )
+        return JSONResponse(json.loads(json.dumps({"message": "Data migration complete", "details": results})), status_code=200)
 
-    except Exception as e:
-        logging.error(f"Error during data loading: {str(e)}")
-        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+    except Exception as exc:
+        logging.error(f"Error during data loading: {str(exc)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(exc)}") from exc
