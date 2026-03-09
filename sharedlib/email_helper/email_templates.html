@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #F4F4F4;
+            color: #333333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #FFFFFF;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #27245C;
+            padding: 30px;
+            text-align: center;
+            color: #FFFFFF;
+            border-bottom: 4px solid #C73939;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+        }
+
+        .content h2 {
+            color: #27245C;
+            margin-top: 0;
+            font-size: 20px;
+            border-left: 4px solid #C73939;
+            padding-left: 15px;
+        }
+
+        .footer {
+            background-color: #EEEEEE;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #777777;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .button {
+            background-color: #C73939;
+            color: #FFFFFF !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .highlight {
+            color: #C73939;
+            font-weight: bold;
+        }
+
+        .info-box {
+            background-color: #F9F9F9;
+            border: 1px solid #E0E0E0;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 8px 0;
+            border-bottom: 1px solid #EEEEEE;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #555555;
+            text-align: left;
+        }
+
+        .info-value {
+            color: #27245C;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Procurement Planning Intelligent System</h1>
+            <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">Team Cow Horse</div>
+        </div>
+
+        <div class="content">
+            {% if template_type == 'ACCOUNT_CREATED' %}
+            <h2>Welcome to Procurement Planning Intelligent System</h2>
+            <p>Hello <span class="highlight">{{ name }}</span>,</p>
+            <p>An administrator has created an account for you in the Procurement Planning Intelligent System. Below are
+                your
+                profile details and temporary login credentials:</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">Email:</td>
+                    <td class="info-value">{{ email }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Role:</td>
+                    <td class="info-value">{{ role_name }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Temporary Password:</td>
+                    <td class="info-value highlight">{{ temp_password }}</td>
+                </tr>
+            </table>
+
+            <p>Please log in and change your password immediately for security reasons.</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="color: #FFFFFF !important; text-decoration: none;">Log
+                    In Now</a>
+            </div>
+
+            {% elif template_type == 'FORGET_PASSWORD' %}
+            <h2>Password Reset Notification</h2>
+            <p>Hello,</p>
+            <p>As requested, your password has been reset. Please find your temporary password below:</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">User ID:</td>
+                    <td class="info-value">{{ user_id }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Temporary Password:</td>
+                    <td class="info-value highlight">{{ temp_password }}</td>
+                </tr>
+            </table>
+
+            <p>If you did not request this, please contact your administrator immediately.</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="color: #FFFFFF !important; text-decoration: none;">Log
+                    In Now</a>
+            </div>
+
+            {% elif template_type == 'PROCUREMENT_ALERT' %}
+            <h2>Automated Procurement Alert</h2>
+            <p>The AI system has detected a potential stock shortage that requires your attention.</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">Item:</td>
+                    <td class="info-value">{{ item_name }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Predicted Demand:</td>
+                    <td class="info-value">{{ predicted_demand }} units</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Current Stock:</td>
+                    <td class="info-value highlight">{{ current_stock }} units</td>
+                </tr>
+            </table>
+
+            <p><strong>Justification:</strong> {{ justification }}</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button"
+                    style="color: #FFFFFF !important; text-decoration: none;">Review Alert Details</a>
+            </div>
+
+            {% elif template_type == 'PURCHASE_REQUEST' %}
+            <h2>New Purchase Request: {{ doc_id }}</h2>
+            <p>A new purchase request has been submitted for your review.</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">Purchase Request ID:</td>
+                    <td class="info-value">{{ doc_id }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Requested By:</td>
+                    <td class="info-value">{{ officer_name }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Total Items:</td>
+                    <td class="info-value">{{ item_count }}</td>
+                </tr>
+            </table>
+
+            <p>Please find the official PR document attached to this email.</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="color: #FFFFFF !important; text-decoration: none;">View
+                    & Approve</a>
+            </div>
+
+            {% elif template_type == 'PURCHASE_ORDER' %}
+            <h2>Official Purchase Order: {{ doc_id }}</h2>
+            <p>Please find the official Purchase Order attached to this email representing our commitment to procure the
+                listed items.</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">Purchase Order ID:</td>
+                    <td class="info-value">{{ doc_id }}</td>
+                </tr>
+                <tr>
+                    <td class="info-label">Issued Date:</td>
+                    <td class="info-value">{{ date }}</td>
+                </tr>
+            </table>
+
+            <p>We look forward to your acknowledgment and prompt fulfillment of this order.</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="color: #FFFFFF !important; text-decoration: none;">View
+                    Order</a>
+            </div>
+
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            &copy; 2026 Team Cow Horse | Chin Hin AI Hackathon 2026<br>
+            This is an automated message. Please do not reply.
+        </div>
+    </div>
+</body>
+
+</html>
