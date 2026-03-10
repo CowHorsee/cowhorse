@@ -82,7 +82,16 @@ async def log_http_payloads(
 
     request = Request(request.scope, receive)
 
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "HTTP %s %s failed request_payload=%s",
+            request.method,
+            request.url.path,
+            request_payload or "[empty]",
+        )
+        raise
 
     response_body = b""
     async for chunk in response.body_iterator:
