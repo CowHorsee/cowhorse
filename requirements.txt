@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 gunicorn
+pydantic-settings
 pandas
 azure-data-tables
 azure-core

@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ccc; padding: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>{{ data.doc_type }} {{ data.doc_id }}</h1>
+    <p>Date: {{ data.date }}</p>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Qty</th><th>Unit Price</th></tr>
+      </thead>
+      <tbody>
+        {% for item in data['items'] %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.unit_price }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
