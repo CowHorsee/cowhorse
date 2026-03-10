@@ -79,6 +79,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="CowHorse API",
         version="2.1.1",
+        description="Last updated: 2026-03-11 03:05 MYT",
         openapi_url="/openapi.json",
         docs_url="/docs",
     )

@@ -163,6 +163,7 @@ python -m pytest -k health -q
 - Use Pydantic schemas in `schemas/` for request bodies.
 - Keep response shapes backward-compatible unless requested.
 - Health endpoint should remain lightweight and unauthenticated.
+- When updating the FastAPI `version` in `main.py`, also update the Swagger `description` last-updated timestamp in the same change.
 
 ## 9) Data Layer Conventions (Azure Table Storage)
 
