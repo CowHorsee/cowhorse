@@ -10,7 +10,7 @@ This project now runs the `cowhorse_v2` API on FastAPI for Azure Web App.
 python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 8000
+uvicorn app:app --reload
 ```
 
 Health endpoint: `GET /health`
