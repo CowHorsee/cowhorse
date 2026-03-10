@@ -5,7 +5,13 @@ from fastapi import APIRouter, HTTPException, Query
 from db.table_storage import DBHelper
 from integrations.email import quick_send
 from integrations.pdf import generate_po_doc
-from schemas.purchase_orders import CreatePORequest, UpdatePOStatusRequest
+from schemas.common import APIResponse, success_response
+from schemas.purchase_orders import (
+    CreatePORequest,
+    PODetailsResponse,
+    POTicketResponse,
+    UpdatePOStatusRequest,
+)
 from services.purchase_orders import (
     create_po,
     get_po_details,
@@ -16,7 +22,7 @@ from services.purchase_orders import (
 router = APIRouter(prefix="/po", tags=["Purchase Order"])
 
 
-@router.post("/create_po")
+@router.post("/create_po", response_model=APIResponse[list[str]])
 async def api_create_po(body: CreatePORequest):
     try:
         result = create_po(body.pr_id, body.proc_item, body.user_id)
@@ -59,45 +65,45 @@ async def api_create_po(body: CreatePORequest):
         if not result:
             raise HTTPException(status_code=400, detail="Validation failed")
 
-        return result
+        return success_response(data=result, message="Purchase orders created successfully")
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_po_ticket")
+@router.get("/get_po_ticket", response_model=APIResponse[list[POTicketResponse]])
 def api_get_po_ticket(user_id: str = Query(...)):
     try:
         result = get_po_ticket(user_id)
         if isinstance(result, str) and result.startswith("Error"):
             raise HTTPException(status_code=400, detail=result)
-        return result
+        return success_response(data=result, message="Purchase orders retrieved successfully")
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_po_details")
+@router.get("/get_po_details", response_model=APIResponse[PODetailsResponse])
 def api_get_po_details(user_id: str = Query(...), po_id: str = Query(...)):
     try:
         result = get_po_details(user_id, po_id)
         if isinstance(result, str) and result.startswith("Error"):
             raise HTTPException(status_code=400, detail=result)
-        return result
+        return success_response(data=result, message="Purchase order details retrieved successfully")
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/update_po_status")
+@router.post("/update_po_status", response_model=APIResponse[bool])
 def api_update_po_status(body: UpdatePOStatusRequest):
     try:
         result = update_po_status(body.supplier_id, body.po_id, body.status_name)
         if result is True:
-            return True
+            return success_response(data=True, message="Purchase order status updated successfully")
         raise HTTPException(status_code=400, detail=str(result))
     except HTTPException:
         raise

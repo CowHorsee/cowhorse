@@ -1,9 +1,12 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from api.v1.router import api_router
 from core.logging_middleware import log_http_payloads
+from schemas.common import error_response
 
 
 def configure_logging() -> None:
@@ -38,18 +41,78 @@ def configure_logging() -> None:
             handler.setFormatter(formatter)
 
 
+def _normalize_validation_errors(exc: RequestValidationError) -> list[str]:
+    errors: list[str] = []
+
+    for error in exc.errors():
+        location = " -> ".join(str(item) for item in error.get("loc", []))
+        message = str(error.get("msg", "Invalid request"))
+        errors.append(f"{location}: {message}" if location else message)
+
+    return errors or ["Invalid request"]
+
+
+def _normalize_http_error(detail: object) -> list[str]:
+    if isinstance(detail, str):
+        return [detail]
+
+    if isinstance(detail, list):
+        normalized: list[str] = []
+        for item in detail:
+            if isinstance(item, dict) and "msg" in item:
+                location = " -> ".join(str(part) for part in item.get("loc", []))
+                message = str(item["msg"])
+                normalized.append(f"{location}: {message}" if location else message)
+            else:
+                normalized.append(str(item))
+        return normalized or ["Request failed"]
+
+    if isinstance(detail, dict):
+        return [str(detail)]
+
+    return ["Request failed"]
+
+
 def create_app() -> FastAPI:
     configure_logging()
 
     app = FastAPI(
         title="CowHorse API",
-        version="2.0.0",
+        version="2.1.1",
         openapi_url="/openapi.json",
         docs_url="/docs",
     )
 
     app.middleware("http")(log_http_payloads)
     app.include_router(api_router)
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(_: Request, exc: HTTPException):
+        errors = _normalize_http_error(exc.detail)
+        message = errors[0] if len(errors) == 1 else "Request failed"
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_response(message=message, errors=errors).model_dump(),
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(_: Request, exc: RequestValidationError):
+        errors = _normalize_validation_errors(exc)
+        return JSONResponse(
+            status_code=422,
+            content=error_response(message="Validation failed", errors=errors).model_dump(),
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(_: Request, exc: Exception):
+        logging.exception("Unhandled exception while processing request", exc_info=exc)
+        return JSONResponse(
+            status_code=500,
+            content=error_response(
+                message="Internal server error",
+                errors=[str(exc)],
+            ).model_dump(),
+        )
 
     @app.get("/")
     def root():

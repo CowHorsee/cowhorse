@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -29,3 +31,60 @@ class ProcurementAlertRequest(BaseModel):
     item_name: str
     predicted_demand: float
     justification: str
+
+
+class PRBridgeItemResponse(BaseModel):
+    doc_id: str
+    item_id: str | int
+    quantity: int | float
+
+
+class PRTicketResponse(BaseModel):
+    pr_id: str
+    status_id: str | int
+    created_at: str | None = None
+    created_by: str | None = None
+    last_modified_at: str | None = None
+    last_modified_by: str | None = None
+    reviewed_at: str | None = None
+    reviewed_by: str | None = None
+    justification: str | None = None
+    status_name: str | None = None
+    creator_role: str | None = None
+
+
+class CreatePRResponse(BaseModel):
+    pr_id: str
+    status: int
+    items: list[PRBridgeItemResponse]
+
+
+class PRDetailHeaderResponse(BaseModel):
+    pr_id: str
+    status_id: str | int
+    created_at: str | None = None
+    created_by: str | None = None
+    last_modified_at: str | None = None
+    last_modified_by: str | None = None
+    reviewed_at: str | None = None
+    reviewed_by: str | None = None
+    justification: str | None = None
+    status_name: str | None = None
+    creator_role: str | None = None
+    user_id: str | None = None
+
+
+class PRDetailItemResponse(BaseModel):
+    item_id: str | int
+    quantity: int | float | None = None
+    doc_id: str | None = None
+
+
+class PRDetailsResponse(BaseModel):
+    header: PRDetailHeaderResponse
+    items: list[PRDetailItemResponse]
+
+
+class DataLoaderResponse(BaseModel):
+    message: str
+    details: dict[str, str]

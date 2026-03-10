@@ -24,16 +24,16 @@ def _serialize_users(df: pd.DataFrame) -> list[dict]:
 def login(email: str | None, password_plain: str | None):
     user_df = db.extract("user", conditions={"email": email})
     if user_df.empty:
-        return None, None, "Error: Email does not exist."
+        return None, None, None, None, "Error: Email does not exist."
 
     user_data = user_df.iloc[0]
     stored_hash = str(user_data["password_hash"]).encode("utf-8")
     if password_plain and bcrypt.checkpw(password_plain.encode("utf-8"), stored_hash):
         role_df = db.extract("dim_role", conditions={"role_id": int(user_data["role_id"])})
         role_name = role_df.iloc[0]["role_name"] if not role_df.empty else "Unknown"
-        return role_name, user_data["user_id"], "Login Successful"
+        return role_name, user_data["user_id"], user_data["email"], user_data["name"], "Login Successful"
 
-    return None, None, "Error: Incorrect password."
+    return None, None, None, None, "Error: Incorrect password."
 
 
 def register(

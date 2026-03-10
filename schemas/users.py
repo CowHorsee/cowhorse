@@ -28,3 +28,20 @@ class ChangePasswordRequest(BaseModel):
     user_id: str
     old_password: str
     new_password: str
+
+
+class LoginResponse(BaseModel):
+    role: str
+    user_id: str
+    email: str
+    name: str
+    message: str
+
+
+class UserResponse(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    role_id: str | int | None = None
+    created_at: str | None = None
+    role_name: str | None = None

@@ -5,10 +5,14 @@ from fastapi import APIRouter, HTTPException, Query
 from db.table_storage import DBHelper
 from integrations.email import quick_send
 from integrations.pdf import generate_pr_doc
+from schemas.common import APIResponse, success_response
 from schemas.purchase_requests import (
     AcceptPRSuggestionRequest,
     CreatePRRequest,
+    CreatePRResponse,
     ModifyPRRequest,
+    PRDetailsResponse,
+    PRTicketResponse,
     ProcurementAlertRequest,
     ReviewPRRequest,
 )
@@ -26,7 +30,7 @@ from services.purchase_requests import (
 router = APIRouter(prefix="/pr", tags=["Purchase Request"])
 
 
-@router.post("/create_pr")
+@router.post("/create_pr", response_model=APIResponse[CreatePRResponse])
 async def api_create_pr(body: CreatePRRequest):
     try:
         result = create_pr(body.user_id, body.proc_item, body.justification)
@@ -60,17 +64,17 @@ async def api_create_pr(body: CreatePRRequest):
             except Exception as pdf_err:
                 logging.error(f"Failed to generate/send PR PDF/Email: {pdf_err}")
 
-        return result
+        return success_response(data=result, message="Purchase request created successfully")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/accept_pr_suggestion")
+@router.post("/accept_pr_suggestion", response_model=APIResponse[str])
 def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
     try:
         result = accept_pr_suggestion(body.pr_id, body.officer_id)
         if "Success" in result:
-            return result
+            return success_response(data=result, message=result)
         raise HTTPException(status_code=400, detail=result)
     except HTTPException:
         raise
@@ -78,12 +82,12 @@ def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/modify_pr")
+@router.post("/modify_pr", response_model=APIResponse[str])
 def api_modify_pr(body: ModifyPRRequest):
     try:
         result = modify_pr(body.user_id, body.pr_id, body.proc_item, body.justification)
         if "updated" in result or "Success" in result:
-            return result
+            return success_response(data=result, message=result)
         raise HTTPException(status_code=400, detail=result)
     except HTTPException:
         raise
@@ -91,55 +95,64 @@ def api_modify_pr(body: ModifyPRRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_pr_ticket")
+@router.get("/get_pr_ticket", response_model=APIResponse[list[PRTicketResponse]])
 def api_get_pr_ticket(
     user_id: str = Query(...),
     pr_id: str | None = Query(default=None),
     status: str | None = Query(default=None),
 ):
     try:
-        return get_pr_ticket(user_id, pr_id, status)
+        return success_response(
+            data=get_pr_ticket(user_id, pr_id, status),
+            message="Purchase requests retrieved successfully",
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/list_by_user")
+@router.get("/list_by_user", response_model=APIResponse[list[PRTicketResponse]])
 def api_get_pr_list_by_user(user_id: str = Query(...)):
     try:
-        return get_pr_list_by_user_id(user_id)
+        return success_response(
+            data=get_pr_list_by_user_id(user_id),
+            message="Purchase requests retrieved successfully",
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_pr_details")
+@router.get("/get_pr_details", response_model=APIResponse[PRDetailsResponse])
 def api_get_pr_details(user_id: str = Query(...), pr_id: str = Query(...)):
     try:
         result = get_pr_details(user_id, pr_id)
         if isinstance(result, str) and result.startswith("Error"):
             raise HTTPException(status_code=403, detail=result)
-        return result
+        return success_response(data=result, message="Purchase request details retrieved successfully")
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/review_pr")
+@router.post("/review_pr", response_model=APIResponse[str])
 def api_review_pr(body: ReviewPRRequest):
     try:
         result = review_pr(body.pr_id, body.decision, body.manager_id)
         if result.startswith("Error"):
             raise HTTPException(status_code=400, detail=result)
-        return result
+        return success_response(data=result, message=result)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/procurement_alert")
+@router.post("/procurement_alert", response_model=APIResponse[CreatePRResponse | str])
 def api_procurement_alert(body: ProcurementAlertRequest):
     try:
-        return procurement_alert(body.item_name, body.predicted_demand, body.justification)
+        result = procurement_alert(body.item_name, body.predicted_demand, body.justification)
+        if isinstance(result, str):
+            return success_response(data=result, message=result)
+        return success_response(data=result, message="Procurement alert processed successfully")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
