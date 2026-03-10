@@ -77,6 +77,14 @@ async def log_http_payloads(
     request_body = await request.body()
     request_payload = _decode_body(request_body, request.headers.get("content-type"))
 
+    logger.info(
+        "HTTP REQUEST method=%s path=%s content_type=%s payload=%s",
+        request.method,
+        request.url.path,
+        request.headers.get("content-type", "[none]"),
+        request_payload or "[empty]",
+    )
+
     async def receive() -> dict[str, Any]:
         return {"type": "http.request", "body": request_body, "more_body": False}
 
@@ -86,10 +94,9 @@ async def log_http_payloads(
         response = await call_next(request)
     except Exception:
         logger.exception(
-            "HTTP %s %s failed request_payload=%s",
+            "HTTP RESPONSE method=%s path=%s status=500 payload=[unavailable due to exception]",
             request.method,
             request.url.path,
-            request_payload or "[empty]",
         )
         raise
 
@@ -99,11 +106,11 @@ async def log_http_payloads(
 
     response_payload = _decode_body(response_body, response.headers.get("content-type"))
     logger.info(
-        "HTTP %s %s completed with status=%s request_payload=%s response_payload=%s",
+        "HTTP RESPONSE method=%s path=%s status=%s content_type=%s payload=%s",
         request.method,
         request.url.path,
         response.status_code,
-        request_payload or "[empty]",
+        response.headers.get("content-type", "[none]"),
         response_payload or "[empty]",
     )
 
