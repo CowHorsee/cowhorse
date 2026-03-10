@@ -10,6 +10,15 @@ from integrations.email import quick_send
 
 db = DBHelper()
 gatekeeper = RBACGatekeeper()
+SENSITIVE_USER_COLUMNS = ["password_hash", "raw_password"]
+
+
+def _serialize_users(df: pd.DataFrame) -> list[dict]:
+    if df.empty:
+        return []
+
+    sanitized_df = df.drop(columns=[col for col in SENSITIVE_USER_COLUMNS if col in df.columns])
+    return sanitized_df.to_dict(orient="records")
 
 
 def login(email: str | None, password_plain: str | None):
@@ -132,6 +141,23 @@ def change_password(user_id: str | None, old_password: str | None, new_password:
     return "Error: Incorrect old password."
 
 
+def list_users(admin_id: str | None):
+    if not gatekeeper.is_authorized(admin_id, "register"):
+        return "Error: Access Denied."
+
+    df = db.extract("user")
+    if df.empty:
+        return []
+
+    roles = db.extract("dim_role", fields=["role_id", "role_name"])
+    if not roles.empty and "role_id" in df.columns:
+        df["role_id"] = df["role_id"].astype(str)
+        roles["role_id"] = roles["role_id"].astype(str)
+        df = df.merge(roles, on="role_id", how="left")
+
+    return _serialize_users(df)
+
+
 def search_user(email: str | None = None, name: str | None = None, role_name: str | None = None):
     df = db.extract("user")
     if df.empty:
@@ -146,4 +172,4 @@ def search_user(email: str | None = None, name: str | None = None, role_name: st
         df = df.merge(roles, on="role_id")
         df = df[df["role_name"] == role_name]
 
-    return df.to_dict(orient="records")
+    return _serialize_users(df)

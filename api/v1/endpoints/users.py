@@ -10,6 +10,7 @@ from schemas.users import (
 from services.user_management import (
     change_password,
     forget_password,
+    list_users,
     login,
     modify_role,
     register,
@@ -78,6 +79,19 @@ def api_change_password(body: ChangePasswordRequest):
         if "Success" in result:
             return result
         raise HTTPException(status_code=401, detail=result)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/list_users")
+def api_list_users(admin_id: str = Query(...)):
+    try:
+        result = list_users(admin_id)
+        if isinstance(result, str) and result.startswith("Error"):
+            raise HTTPException(status_code=403, detail=result)
+        return result
     except HTTPException:
         raise
     except Exception as exc:
