@@ -18,5 +18,14 @@ Health endpoint: `GET /health`
 ### Azure Web App startup command
 
 ```bash
-gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 --worker-class uvicorn.workers.UvicornWorker app:app
+bash startup.sh
 ```
+
+Equivalent direct command:
+
+```bash
+gunicorn --bind=0.0.0.0 --timeout 600 --workers 2 --worker-class uvicorn.workers.UvicornWorker app:app
+```
+
+Do not use plain `gunicorn app:app` for FastAPI. That starts WSGI sync workers and will fail with:
+`TypeError: FastAPI.__call__() missing 1 required positional argument: 'send'`.
