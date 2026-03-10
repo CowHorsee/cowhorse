@@ -22,7 +22,7 @@ from services.purchase_orders import (
 router = APIRouter(prefix="/po", tags=["Purchase Order"])
 
 
-@router.post("/create_po", response_model=APIResponse[list[str]])
+@router.post("/create_po", response_model=APIResponse)
 async def api_create_po(body: CreatePORequest):
     try:
         result = create_po(body.pr_id, body.proc_item, body.user_id)
@@ -72,7 +72,7 @@ async def api_create_po(body: CreatePORequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_po_ticket", response_model=APIResponse[list[POTicketResponse]])
+@router.get("/get_po_ticket", response_model=APIResponse)
 def api_get_po_ticket(user_id: str = Query(...)):
     try:
         result = get_po_ticket(user_id)
@@ -85,7 +85,7 @@ def api_get_po_ticket(user_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_po_details", response_model=APIResponse[PODetailsResponse])
+@router.get("/get_po_details", response_model=APIResponse)
 def api_get_po_details(user_id: str = Query(...), po_id: str = Query(...)):
     try:
         result = get_po_details(user_id, po_id)
@@ -98,7 +98,7 @@ def api_get_po_details(user_id: str = Query(...), po_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/update_po_status", response_model=APIResponse[bool])
+@router.post("/update_po_status", response_model=APIResponse)
 def api_update_po_status(body: UpdatePOStatusRequest):
     try:
         result = update_po_status(body.supplier_id, body.po_id, body.status_name)

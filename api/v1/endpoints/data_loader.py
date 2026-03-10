@@ -7,7 +7,7 @@ from services.data_loader import run_data_loader
 router = APIRouter(prefix="/data-loader", tags=["Maintenance"])
 
 
-@router.post("/run", response_model=APIResponse[DataLoaderResponse])
+@router.post("/run", response_model=APIResponse)
 def api_run_data_loader():
     try:
         return success_response(data=run_data_loader(), message="Data loader completed successfully")

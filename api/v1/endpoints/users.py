@@ -23,7 +23,7 @@ from services.user_management import (
 router = APIRouter(prefix="/user", tags=["User Management"])
 
 
-@router.post("/login", response_model=APIResponse[LoginResponse])
+@router.post("/login", response_model=APIResponse)
 def api_login(body: LoginRequest):
     try:
         role, user_id, email, name, msg = login(body.email, body.password)
@@ -45,7 +45,7 @@ def api_login(body: LoginRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/register", response_model=APIResponse[str])
+@router.post("/register", response_model=APIResponse)
 def api_register(body: RegisterRequest):
     try:
         result = register(body.admin_id, body.email, body.name, body.role_name, body.password)
@@ -58,7 +58,7 @@ def api_register(body: RegisterRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/forget_password", response_model=APIResponse[str])
+@router.post("/forget_password", response_model=APIResponse)
 def api_forget_password(body: ForgetPasswordRequest):
     try:
         result = forget_password(body.user_id)
@@ -71,7 +71,7 @@ def api_forget_password(body: ForgetPasswordRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/modify_role", response_model=APIResponse[str])
+@router.post("/modify_role", response_model=APIResponse)
 def api_modify_role(body: ModifyRoleRequest):
     try:
         result = modify_role(body.admin_id, body.user_id, body.new_role_name)
@@ -84,7 +84,7 @@ def api_modify_role(body: ModifyRoleRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/change_password", response_model=APIResponse[str])
+@router.post("/change_password", response_model=APIResponse)
 def api_change_password(body: ChangePasswordRequest):
     try:
         result = change_password(body.user_id, body.old_password, body.new_password)
@@ -97,7 +97,7 @@ def api_change_password(body: ChangePasswordRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/list_users", response_model=APIResponse[list[UserResponse]])
+@router.get("/list_users", response_model=APIResponse)
 def api_list_users(admin_id: str = Query(...)):
     try:
         result = list_users(admin_id)
@@ -110,7 +110,7 @@ def api_list_users(admin_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/search_user", response_model=APIResponse[list[UserResponse]])
+@router.get("/search_user", response_model=APIResponse)
 def api_search_user(
     email: str | None = Query(default=None),
     name: str | None = Query(default=None),

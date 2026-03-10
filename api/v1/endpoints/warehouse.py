@@ -7,7 +7,7 @@ from services.warehouse_management import count_inventory, update_inventory
 router = APIRouter(prefix="/warehouse", tags=["Warehouse"])
 
 
-@router.get("/count_inventory", response_model=APIResponse[int | dict[str, int]])
+@router.get("/count_inventory", response_model=APIResponse)
 def api_count_inventory(item_name: str | None = Query(default=None)):
     try:
         return success_response(
@@ -18,7 +18,7 @@ def api_count_inventory(item_name: str | None = Query(default=None)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/update_inventory", response_model=APIResponse[str])
+@router.post("/update_inventory", response_model=APIResponse)
 def api_update_inventory(body: UpdateInventoryRequest):
     try:
         result = update_inventory(body.incoming_csv_path)

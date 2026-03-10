@@ -30,7 +30,7 @@ from services.purchase_requests import (
 router = APIRouter(prefix="/pr", tags=["Purchase Request"])
 
 
-@router.post("/create_pr", response_model=APIResponse[CreatePRResponse])
+@router.post("/create_pr", response_model=APIResponse)
 async def api_create_pr(body: CreatePRRequest):
     try:
         result = create_pr(body.user_id, body.proc_item, body.justification)
@@ -69,7 +69,7 @@ async def api_create_pr(body: CreatePRRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/accept_pr_suggestion", response_model=APIResponse[str])
+@router.post("/accept_pr_suggestion", response_model=APIResponse)
 def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
     try:
         result = accept_pr_suggestion(body.pr_id, body.officer_id)
@@ -82,7 +82,7 @@ def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/modify_pr", response_model=APIResponse[str])
+@router.post("/modify_pr", response_model=APIResponse)
 def api_modify_pr(body: ModifyPRRequest):
     try:
         result = modify_pr(body.user_id, body.pr_id, body.proc_item, body.justification)
@@ -95,7 +95,7 @@ def api_modify_pr(body: ModifyPRRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_pr_ticket", response_model=APIResponse[list[PRTicketResponse]])
+@router.get("/get_pr_ticket", response_model=APIResponse)
 def api_get_pr_ticket(
     user_id: str = Query(...),
     pr_id: str | None = Query(default=None),
@@ -110,7 +110,7 @@ def api_get_pr_ticket(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/list_by_user", response_model=APIResponse[list[PRTicketResponse]])
+@router.get("/list_by_user", response_model=APIResponse)
 def api_get_pr_list_by_user(user_id: str = Query(...)):
     try:
         return success_response(
@@ -121,7 +121,7 @@ def api_get_pr_list_by_user(user_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/get_pr_details", response_model=APIResponse[PRDetailsResponse])
+@router.get("/get_pr_details", response_model=APIResponse)
 def api_get_pr_details(user_id: str = Query(...), pr_id: str = Query(...)):
     try:
         result = get_pr_details(user_id, pr_id)
@@ -134,7 +134,7 @@ def api_get_pr_details(user_id: str = Query(...), pr_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/review_pr", response_model=APIResponse[str])
+@router.post("/review_pr", response_model=APIResponse)
 def api_review_pr(body: ReviewPRRequest):
     try:
         result = review_pr(body.pr_id, body.decision, body.manager_id)
@@ -147,7 +147,7 @@ def api_review_pr(body: ReviewPRRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/procurement_alert", response_model=APIResponse[CreatePRResponse | str])
+@router.post("/procurement_alert", response_model=APIResponse)
 def api_procurement_alert(body: ProcurementAlertRequest):
     try:
         result = procurement_alert(body.item_name, body.predicted_demand, body.justification)
