@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from db.table_storage import DBHelper
 from integrations.email import quick_send
 from integrations.pdf import generate_pr_doc
-from schemas.common import APIResponse, success_response
+from schemas.base import APIResponse, success_response
 from schemas.purchase_requests import (
     AcceptPRSuggestionRequest,
     CreatePRRequest,

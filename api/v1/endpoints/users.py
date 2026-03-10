@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from schemas.common import APIResponse, success_response
+from schemas.base import APIResponse, success_response
 from schemas.users import (
     ChangePasswordRequest,
     ForgetPasswordRequest,

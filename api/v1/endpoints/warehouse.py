@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from schemas.common import APIResponse, success_response
+from schemas.base import APIResponse, success_response
 from schemas.warehouse import UpdateInventoryRequest
 from services.warehouse_management import count_inventory, update_inventory
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from schemas.common import APIResponse, success_response
+from schemas.base import APIResponse, success_response
 from schemas.purchase_requests import DataLoaderResponse
 from services.data_loader import run_data_loader
 
