@@ -165,17 +165,7 @@ def modify_pr(user_id: str | None, pr_id: str | None, proc_item: dict, justifica
     return f"PR {pr_id} updated successfully."
 
 
-def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | None = None):
-    role = gatekeeper.get_user_role(user_id)
-    conditions: dict = {}
-    if role == "Procurement Officer":
-        conditions["created_by"] = user_id
-    if pr_id:
-        conditions["pr_id"] = pr_id
-    if status:
-        conditions["status_id"] = int(status)
-
-    pr_df = db.extract("purchase_request", conditions=conditions)
+def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
     if pr_df.empty:
         return []
 
@@ -198,7 +188,27 @@ def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | N
     pr_df = pr_df.rename(columns={"role_name": "creator_role"})
     if "user_id" in pr_df.columns:
         pr_df = pr_df.drop(columns=["user_id"])
+
     return pr_df.to_dict(orient="records")
+
+
+def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | None = None):
+    role = gatekeeper.get_user_role(user_id)
+    conditions: dict = {}
+    if role == "Procurement Officer":
+        conditions["created_by"] = user_id
+    if pr_id:
+        conditions["pr_id"] = pr_id
+    if status:
+        conditions["status_id"] = int(status)
+
+    pr_df = db.extract("purchase_request", conditions=conditions)
+    return _enrich_pr_records(pr_df)
+
+
+def get_pr_list_by_user_id(user_id: str):
+    pr_df = db.extract("purchase_request", conditions={"created_by": user_id})
+    return _enrich_pr_records(pr_df)
 
 
 def get_pr_details(user_id: str | None, pr_id: str | None):

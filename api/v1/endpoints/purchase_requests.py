@@ -16,6 +16,7 @@ from services.purchase_requests import (
     accept_pr_suggestion,
     create_pr,
     get_pr_details,
+    get_pr_list_by_user_id,
     get_pr_ticket,
     modify_pr,
     procurement_alert,
@@ -98,6 +99,14 @@ def api_get_pr_ticket(
 ):
     try:
         return get_pr_ticket(user_id, pr_id, status)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get("/list_by_user")
+def api_get_pr_list_by_user(user_id: str = Query(...)):
+    try:
+        return get_pr_list_by_user_id(user_id)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
