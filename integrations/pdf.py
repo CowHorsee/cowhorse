@@ -12,7 +12,7 @@ async def generate_pdf(data: dict, output_path: str | None = None):
     template_dir = Path(__file__).resolve().parent
     env = Environment(loader=FileSystemLoader(str(template_dir)))
     template = env.get_template("pdf_template.html")
-    html_content = template.render(data=data)
+    html_content = template.render(**data)
 
     from playwright.async_api import async_playwright
 
