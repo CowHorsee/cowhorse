@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException
 
-from schemas.base import APIResponse, success_response
-from schemas.purchase_requests import DataLoaderResponse
+from api.schemas.base import ERROR_RESPONSES, success_response
+from api.schemas.purchase_requests import DataLoaderAPIResponse
 from services.data_loader import run_data_loader
 
 router = APIRouter(prefix="/data-loader", tags=["Maintenance"])
 
 
-@router.post("/run", response_model=APIResponse)
+@router.post("/run", response_model=DataLoaderAPIResponse, responses=ERROR_RESPONSES)
 def api_run_data_loader():
     try:
-        return success_response(data=run_data_loader(), message="Data loader completed successfully")
+        return success_response(message="Data loader completed successfully", data=run_data_loader())
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from api.schemas.base import BaseResponse
+
 
 class CreatePORequest(BaseModel):
     pr_id: str
@@ -38,3 +40,19 @@ class PODetailsResponse(BaseModel):
     status_name: str | None = None
     creator_role: str | None = None
     items: list[POItemResponse]
+
+
+class CreatePOResponse(BaseResponse):
+    data: list[str]
+
+
+class POTicketListResponse(BaseResponse):
+    data: list[POTicketResponse]
+
+
+class PODetailsAPIResponse(BaseResponse):
+    data: PODetailsResponse
+
+
+class UpdatePOStatusResponse(BaseResponse):
+    data: bool

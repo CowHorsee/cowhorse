@@ -1,14 +1,19 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from schemas.base import APIResponse, success_response
-from schemas.users import (
+from api.schemas.base import ERROR_RESPONSES, success_response
+from api.schemas.users import (
     ChangePasswordRequest,
+    ChangePasswordResponse,
     ForgetPasswordRequest,
+    ForgetPasswordResponse,
+    ListUsersResponse,
+    LoginAPIResponse,
     LoginRequest,
-    LoginResponse,
     ModifyRoleRequest,
+    ModifyRoleResponse,
     RegisterRequest,
-    UserResponse,
+    RegisterUserResponse,
+    SearchUsersResponse,
 )
 from services.user_management import (
     change_password,
@@ -23,12 +28,13 @@ from services.user_management import (
 router = APIRouter(prefix="/user", tags=["User Management"])
 
 
-@router.post("/login", response_model=APIResponse)
+@router.post("/login", response_model=LoginAPIResponse, responses=ERROR_RESPONSES)
 def api_login(body: LoginRequest):
     try:
         role, user_id, email, name, msg = login(body.email, body.password)
         if "Successful" in msg:
             return success_response(
+                message=msg,
                 data={
                     "role": role,
                     "user_id": user_id,
@@ -36,7 +42,6 @@ def api_login(body: LoginRequest):
                     "name": name,
                     "message": msg,
                 },
-                message=msg,
             )
         raise HTTPException(status_code=401, detail=msg)
     except HTTPException:
@@ -45,12 +50,12 @@ def api_login(body: LoginRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/register", response_model=APIResponse)
+@router.post("/register", response_model=RegisterUserResponse, responses=ERROR_RESPONSES)
 def api_register(body: RegisterRequest):
     try:
         result = register(body.admin_id, body.email, body.name, body.role_name, body.password)
         if "Successful" in result:
-            return success_response(data=result, message=result)
+            return success_response(message=result, data=result)
         raise HTTPException(status_code=403, detail=result)
     except HTTPException:
         raise
@@ -58,12 +63,12 @@ def api_register(body: RegisterRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/forget_password", response_model=APIResponse)
+@router.post("/forget_password", response_model=ForgetPasswordResponse, responses=ERROR_RESPONSES)
 def api_forget_password(body: ForgetPasswordRequest):
     try:
         result = forget_password(body.user_id)
         if "Success" in result:
-            return success_response(data=result, message=result)
+            return success_response(message=result, data=result)
         raise HTTPException(status_code=400, detail=result)
     except HTTPException:
         raise
@@ -71,12 +76,12 @@ def api_forget_password(body: ForgetPasswordRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/modify_role", response_model=APIResponse)
+@router.post("/modify_role", response_model=ModifyRoleResponse, responses=ERROR_RESPONSES)
 def api_modify_role(body: ModifyRoleRequest):
     try:
         result = modify_role(body.admin_id, body.user_id, body.new_role_name)
         if "Success" in result:
-            return success_response(data=result, message=result)
+            return success_response(message=result, data=result)
         raise HTTPException(status_code=403, detail=result)
     except HTTPException:
         raise
@@ -84,12 +89,12 @@ def api_modify_role(body: ModifyRoleRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/change_password", response_model=APIResponse)
+@router.post("/change_password", response_model=ChangePasswordResponse, responses=ERROR_RESPONSES)
 def api_change_password(body: ChangePasswordRequest):
     try:
         result = change_password(body.user_id, body.old_password, body.new_password)
         if "Success" in result:
-            return success_response(data=result, message=result)
+            return success_response(message=result, data=result)
         raise HTTPException(status_code=401, detail=result)
     except HTTPException:
         raise
@@ -97,20 +102,20 @@ def api_change_password(body: ChangePasswordRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/list_users", response_model=APIResponse)
+@router.get("/list_users", response_model=ListUsersResponse, responses=ERROR_RESPONSES)
 def api_list_users(admin_id: str = Query(...)):
     try:
         result = list_users(admin_id)
         if isinstance(result, str) and result.startswith("Error"):
             raise HTTPException(status_code=403, detail=result)
-        return success_response(data=result, message="Users retrieved successfully")
+        return success_response(message="Users retrieved successfully", data=result)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.get("/search_user", response_model=APIResponse)
+@router.get("/search_user", response_model=SearchUsersResponse, responses=ERROR_RESPONSES)
 def api_search_user(
     email: str | None = Query(default=None),
     name: str | None = Query(default=None),
@@ -118,8 +123,8 @@ def api_search_user(
 ):
     try:
         return success_response(
-            data=search_user(email, name, role_name),
             message="Users retrieved successfully",
+            data=search_user(email, name, role_name),
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

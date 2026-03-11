@@ -1,6 +1,6 @@
-from typing import Any
-
 from pydantic import BaseModel
+
+from api.schemas.base import BaseResponse
 
 
 class CreatePRRequest(BaseModel):
@@ -88,3 +88,35 @@ class PRDetailsResponse(BaseModel):
 class DataLoaderResponse(BaseModel):
     message: str
     details: dict[str, str]
+
+
+class CreatePRAPIResponse(BaseResponse):
+    data: CreatePRResponse
+
+
+class AcceptPRSuggestionResponse(BaseResponse):
+    data: str
+
+
+class ModifyPRResponse(BaseResponse):
+    data: str
+
+
+class PRTicketListResponse(BaseResponse):
+    data: list[PRTicketResponse]
+
+
+class PRDetailsAPIResponse(BaseResponse):
+    data: PRDetailsResponse
+
+
+class ReviewPRResponse(BaseResponse):
+    data: str
+
+
+class ProcurementAlertResponse(BaseResponse):
+    data: CreatePRResponse | str
+
+
+class DataLoaderAPIResponse(BaseResponse):
+    data: DataLoaderResponse

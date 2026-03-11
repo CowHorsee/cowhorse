@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from api.schemas.base import BaseResponse
 
 
 class LoginRequest(BaseModel):
@@ -35,7 +37,6 @@ class LoginResponse(BaseModel):
     user_id: str
     email: str
     name: str
-    message: str
 
 
 class UserResponse(BaseModel):
@@ -45,3 +46,31 @@ class UserResponse(BaseModel):
     role_id: str | int | None = None
     created_at: str | None = None
     role_name: str | None = None
+
+
+class LoginAPIResponse(BaseResponse):
+    data: LoginResponse
+
+
+class RegisterUserResponse(BaseResponse):
+    data: str
+
+
+class ForgetPasswordResponse(BaseResponse):
+    data: str
+
+
+class ModifyRoleResponse(BaseResponse):
+    data: str
+
+
+class ChangePasswordResponse(BaseResponse):
+    data: str
+
+
+class ListUsersResponse(BaseResponse):
+    data: list[UserResponse]
+
+
+class SearchUsersResponse(BaseResponse):
+    data: list[UserResponse]
