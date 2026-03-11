@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/po", tags=["Purchase Order"])
 
 import asyncio
 from sharedlib.pdf_helper.pdf import generate_po_doc
-from sharedlib.email_helper.email import quick_send
+from sharedlib.email_helper.email_helper import quick_send
 from sharedlib.db_helper.db_ops import DBHelper
 
 @router.post("/create_po")
