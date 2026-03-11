@@ -1,64 +1,133 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 import logging
 
-from api.api_user_management import router as user_router
-from api.api_purchase_request import router as pr_router
-from api.api_purchase_order import router as po_router
-from api.api_warehouse import router as warehouse_router
-from api.api_data_loader import router as data_loader_router
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from api.v1.router import api_router
+from core.logging_middleware import log_http_payloads
+from schemas.base import error_response
 
-app = FastAPI(
-    title="CowHorse Procurement API",
-    description="FastAPI refactor of the Azure Functions-based procurement system.",
-    version="1.0.0"
-)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def configure_logging() -> None:
+    formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
 
-from pydantic import ValidationError
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
 
-# Exception handler for Pydantic validation errors
-@app.exception_handler(ValidationError)
-async def validation_exception_handler(request: Request, exc: ValidationError):
-    logger.error(f"Validation error at {request.url}: {exc.json()}")
-    return JSONResponse(
-        status_code=422,
-        content={"message": "Validation Error", "detail": exc.errors()},
+    if not root_logger.handlers:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        root_logger.addHandler(stream_handler)
+
+    server_logger = logging.getLogger("gunicorn.error")
+    if not server_logger.handlers:
+        uvicorn_logger = logging.getLogger("uvicorn.error")
+        if uvicorn_logger.handlers:
+            server_logger = uvicorn_logger
+
+    http_logger = logging.getLogger("cowhorse.http")
+    http_logger.setLevel(logging.INFO)
+
+    if server_logger.handlers:
+        http_logger.handlers = server_logger.handlers[:]
+        http_logger.propagate = False
+    else:
+        http_logger.propagate = True
+
+    for handler in http_logger.handlers:
+        handler.setLevel(logging.INFO)
+        if handler.formatter is None:
+            handler.setFormatter(formatter)
+
+
+def _normalize_validation_errors(exc: RequestValidationError) -> list[str]:
+    errors: list[str] = []
+
+    for error in exc.errors():
+        location = " -> ".join(str(item) for item in error.get("loc", []))
+        message = str(error.get("msg", "Invalid request"))
+        errors.append(f"{location}: {message}" if location else message)
+
+    return errors or ["Invalid request"]
+
+
+def _normalize_http_error(detail: object) -> list[str]:
+    if isinstance(detail, str):
+        return [detail]
+
+    if isinstance(detail, list):
+        normalized: list[str] = []
+        for item in detail:
+            if isinstance(item, dict) and "msg" in item:
+                location = " -> ".join(str(part) for part in item.get("loc", []))
+                message = str(item["msg"])
+                normalized.append(f"{location}: {message}" if location else message)
+            else:
+                normalized.append(str(item))
+        return normalized or ["Request failed"]
+
+    if isinstance(detail, dict):
+        return [str(detail)]
+
+    return ["Request failed"]
+
+
+def create_app() -> FastAPI:
+    configure_logging()
+
+    app = FastAPI(
+        title="CowHorse API",
+        version="2.1.1",
+        description="Last updated: 2026-03-11 03:05 MYT",
+        openapi_url="/openapi.json",
+        docs_url="/docs",
     )
 
-# Exception handler for general errors
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled error at {request.url}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"message": "Internal Server Error", "detail": str(exc)},
-    )
+    app.middleware("http")(log_http_payloads)
+    app.include_router(api_router)
 
-# Include routers
-app.include_router(user_router, prefix="/api/user", tags=["User Management"])
-app.include_router(pr_router, prefix="/api/pr", tags=["Purchase Request"])
-app.include_router(po_router, prefix="/api/po", tags=["Purchase Order"])
-app.include_router(warehouse_router, prefix="/api/warehouse", tags=["Warehouse"])
-app.include_router(data_loader_router, prefix="/api/data-loader", tags=["Maintenance"])
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(_: Request, exc: HTTPException):
+        errors = _normalize_http_error(exc.detail)
+        message = errors[0] if len(errors) == 1 else "Request failed"
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_response(message=message, errors=errors).model_dump(),
+        )
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to CowHorse Procurement API", "docs": "/docs"}
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(_: Request, exc: RequestValidationError):
+        errors = _normalize_validation_errors(exc)
+        return JSONResponse(
+            status_code=422,
+            content=error_response(message="Validation failed", errors=errors).model_dump(),
+        )
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(_: Request, exc: Exception):
+        logging.exception("Unhandled exception while processing request", exc_info=exc)
+        return JSONResponse(
+            status_code=500,
+            content=error_response(
+                message="Internal server error",
+                errors=[str(exc)],
+            ).model_dump(),
+        )
+
+    @app.get("/")
+    def root():
+        return {
+            "message": "Welcome to Donki-Wonki API",
+            "docs": "/docs",
+            "health": "/health",
+        }
+
+    @app.get("/health")
+    def health_check():
+        return {"status": "healthy"}
+
+    return app
+
+
+app = create_app()
