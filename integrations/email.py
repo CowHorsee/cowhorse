@@ -38,13 +38,16 @@ class EmailHelper:
             return False
 
         try:
+            # 1. Prepare data for template
             render_data = template_data.copy() if isinstance(template_data, dict) else {}
             render_data.update(kwargs)
 
+            # 2. Render HTML body
             template = self.env.get_template(template_name)
             html_content = template.render(**render_data)
 
-            msg = MIMEMultipart()
+            # 3. Create message
+            msg = MIMEMultipart("alternative")
             from_email = self.sender_email or "system@cowhorse.com"
             msg["From"] = from_email
             msg["To"] = recipient_email
@@ -59,9 +62,24 @@ class EmailHelper:
                     msg["Cc"] = cc_emails
                     all_recipients.append(cc_emails)
 
+            # Create the plain-text alternative
+            text_content = f"This is an automated notification from Team Cow Horse.\n\nSubject: {subject}\n\nPlease view this email in an HTML-compatible client to see the full details and actions."
+            
+            msg.attach(MIMEText(text_content, "plain"))
             msg.attach(MIMEText(html_content, "html"))
 
+            # 4. Handle attachments
             if attachments:
+                # Wrap in mixed if attachments exist
+                main_msg = MIMEMultipart("mixed")
+                main_msg["From"] = msg["From"]
+                main_msg["To"] = msg["To"]
+                main_msg["Subject"] = msg["Subject"]
+                if "Cc" in msg:
+                    main_msg["Cc"] = msg["Cc"]
+                main_msg.attach(msg)
+                msg = main_msg
+
                 for file_path in attachments:
                     if os.path.exists(file_path):
                         with open(file_path, "rb") as f:

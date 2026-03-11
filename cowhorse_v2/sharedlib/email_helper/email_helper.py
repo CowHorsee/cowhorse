@@ -38,7 +38,7 @@ class EmailHelper:
             html_content = template.render(**render_data)
 
             # 3. Create message
-            msg = MIMEMultipart()
+            msg = MIMEMultipart("alternative")
             # Ensure sender_email fallback
             from_email = self.sender_email or "system@cowhorse.com"
             msg['From'] = from_email
@@ -51,10 +51,22 @@ class EmailHelper:
                 else:
                     msg['Cc'] = cc_emails
             
+            # Create the plain-text alternative
+            text_content = f"This is an automated notification from Team Cow Horse.\n\nSubject: {subject}\n\nPlease view this email in an HTML-compatible client to see the full details and actions."
+            
+            msg.attach(MIMEText(text_content, 'plain'))
             msg.attach(MIMEText(html_content, 'html'))
 
             # 4. Handle attachments
             if attachments:
+                main_msg = MIMEMultipart("mixed")
+                main_msg['From'] = msg['From']
+                main_msg['To'] = msg['To']
+                main_msg['Cc'] = msg.get('Cc', '')
+                main_msg['Subject'] = msg['Subject']
+                main_msg.attach(msg) 
+                msg = main_msg
+
                 for file_path in attachments:
                     if os.path.exists(file_path):
                         with open(file_path, "rb") as f:

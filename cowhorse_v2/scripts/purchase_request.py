@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 from sharedlib.rbac_helper.role_permissions_check import RBACGatekeeper
 from sharedlib.db_helper.db_ops import DBHelper, get_now
-from sharedlib.email_helper.email import quick_send
+from sharedlib.email_helper.email_helper import quick_send
 
 db = DBHelper()
 gatekeeper = RBACGatekeeper()
