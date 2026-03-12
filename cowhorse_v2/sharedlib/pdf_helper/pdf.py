@@ -101,8 +101,7 @@ async def generate_pr_doc(pr_id):
         "items": items
     }
     
-    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    output_dir = os.path.join(root_dir, "api", "purchase_request_pdf")
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "api", "purchase_request_pdf")
     output_path = os.path.join(output_dir, f"{pr_id}.pdf")
     
     return await generate_pdf(pdf_data, output_path=output_path)
@@ -141,8 +140,7 @@ async def generate_po_doc(po_id):
         "items": items
     }
     
-    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    output_dir = os.path.join(root_dir, "api", "purchase_order_pdf")
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "api", "purchase_order_pdf")
     output_path = os.path.join(output_dir, f"{po_id}.pdf")
     
     return await generate_pdf(pdf_data, output_path=output_path)
