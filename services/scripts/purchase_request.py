@@ -1,8 +1,8 @@
 import pandas as pd
 from datetime import datetime
-from sharedlib.rbac_helper.role_permissions_check import RBACGatekeeper
-from sharedlib.db_helper.db_ops import DBHelper, get_now
-from sharedlib.email_helper.email_helper import quick_send
+from services.sharedlib.rbac_helper.role_permissions_check import RBACGatekeeper
+from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.email_helper.email_helper import quick_send
 
 db = DBHelper()
 gatekeeper = RBACGatekeeper()
@@ -34,7 +34,7 @@ def generate_next_pr_id():
 def procurement_alert(item_name, predicted_demand, justification):
     """AI Trigger: Automatically creates a PR if stock is below threshold."""
     # 1. Get current stock
-    from scripts.uat_warehouse_management import count_inventory
+    from services.scripts.warehouse_management import count_inventory
     current_stock = count_inventory(item_name)
     
     # 2. Check threshold
@@ -221,6 +221,10 @@ def get_pr_ticket(user_id, pr_id=None, status=None):
     if 'user_id' in pr_df.columns: pr_df = pr_df.drop(columns=['user_id'])
 
     return pr_df.to_dict(orient='records')
+
+def get_pr_list_by_user_id(user_id):
+    """Alias for get_pr_ticket to support existing API endpoints."""
+    return get_pr_ticket(user_id)
 
 def get_pr_details(user_id, pr_id):
     """Retrieves full PR details with enriched status and role names."""

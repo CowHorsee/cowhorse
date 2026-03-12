@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from api.schemas.base import ERROR_RESPONSES, success_response
 from api.schemas.warehouse import CountInventoryResponse, UpdateInventoryRequest, UpdateInventoryResponse
-from services.warehouse_management import count_inventory, update_inventory
+from services.scripts.warehouse_management import count_inventory, update_inventory
 
 router = APIRouter(prefix="/warehouse", tags=["Warehouse"])
 

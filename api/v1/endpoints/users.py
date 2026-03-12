@@ -15,7 +15,7 @@ from api.schemas.users import (
     RegisterUserResponse,
     SearchUsersResponse,
 )
-from services.user_management import (
+from services.scripts.user_management import (
     change_password,
     forget_password,
     list_users,
