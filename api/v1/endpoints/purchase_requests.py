@@ -2,9 +2,9 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Query
 
-from services.sharedlib.db_helper.db_helper import DBHelper
-from services.sharedlib.email_helper.email_helper import quick_send
-from services.sharedlib.pdf_helper.pdf import generate_pr_doc
+from db.table_storage import DBHelper
+from integrations.email import quick_send
+from integrations.pdf import generate_pr_doc
 from api.schemas.base import ERROR_RESPONSES, success_response
 from api.schemas.purchase_requests import (
     AcceptPRSuggestionRequest,
@@ -20,7 +20,7 @@ from api.schemas.purchase_requests import (
     ReviewPRRequest,
     ReviewPRResponse,
 )
-from services.scripts.purchase_request import (
+from services.purchase_requests import (
     accept_pr_suggestion,
     create_pr,
     get_pr_details,

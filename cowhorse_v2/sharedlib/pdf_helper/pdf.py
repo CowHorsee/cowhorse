@@ -56,7 +56,7 @@ async def generate_pdf(data, output_path=None):
 
 def _enrich_items(doc_id):
     """Internal helper to get items with names and prices."""
-    from services.sharedlib.db_helper.db_helper import DBHelper
+    from sharedlib.db_helper.db_ops import DBHelper
     db = DBHelper()
     bridge = db.extract("purchase_item_bridge", conditions={"doc_id": doc_id})
     if bridge.empty:
@@ -76,7 +76,7 @@ def _enrich_items(doc_id):
 
 async def generate_pr_doc(pr_id):
     """Enriches data and generates a PR PDF."""
-    from services.sharedlib.db_helper.db_helper import DBHelper
+    from sharedlib.db_helper.db_ops import DBHelper
     db = DBHelper()
     header = db.extract("purchase_request", conditions={"pr_id": pr_id})
     if header.empty:
@@ -109,7 +109,7 @@ async def generate_pr_doc(pr_id):
 
 async def generate_po_doc(po_id):
     """Enriches data and generates a PO PDF."""
-    from services.sharedlib.db_helper.db_helper import DBHelper
+    from sharedlib.db_helper.db_ops import DBHelper
     db = DBHelper()
     header = db.extract("purchase_order", conditions={"po_id": po_id})
     if header.empty:

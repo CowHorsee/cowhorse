@@ -2,9 +2,9 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Query
 
-from services.sharedlib.db_helper.db_helper import DBHelper
-from services.sharedlib.email_helper.email_helper import quick_send
-from services.sharedlib.pdf_helper.pdf import generate_po_doc
+from db.table_storage import DBHelper
+from integrations.email import quick_send
+from integrations.pdf import generate_po_doc
 from api.schemas.base import ERROR_RESPONSES, success_response
 from api.schemas.purchase_orders import (
     CreatePORequest,
@@ -14,7 +14,7 @@ from api.schemas.purchase_orders import (
     UpdatePOStatusRequest,
     UpdatePOStatusResponse,
 )
-from services.scripts.purchase_order import create_po, get_po_details, get_po_ticket, update_po_status
+from services.purchase_orders import create_po, get_po_details, get_po_ticket, update_po_status
 
 router = APIRouter(prefix="/po", tags=["Purchase Order"])
 

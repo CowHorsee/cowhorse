@@ -1,0 +1,12 @@
+roles:
+  Admin:
+    - "register"
+    - "modify_role"
+  Procurement Manager:
+    - "review_pr"
+  Warehouse Personnel:
+    - "update_inventory"
+    - "count_inventory"
+    - "update_po_status"
+  Supplier:
+    - "update_po_status"

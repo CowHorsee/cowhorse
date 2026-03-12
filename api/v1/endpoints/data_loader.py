@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 
 from api.schemas.base import ERROR_RESPONSES, success_response
 from api.schemas.purchase_requests import DataLoaderAPIResponse
-from services.scripts.data_loader import run_data_loader
+from services.data_loader import run_data_loader
 
 router = APIRouter(prefix="/data-loader", tags=["Maintenance"])
 
