@@ -1,8 +1,17 @@
 import pandas as pd
+import sys
+import os
 from datetime import datetime
-from services.sharedlib.rbac_helper.role_permissions_check import RBACGatekeeper
-from services.sharedlib.db_helper.db_helper import DBHelper, get_now
-from services.sharedlib.email_helper.email_helper import quick_send
+
+# --- Entry Point Path Hack ---
+# Add project root to sys.path to support both direct script execution and package imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from services.sharedlib.rbac_helper import RBACGatekeeper
+from services.sharedlib.db_helper import DBHelper, get_now
+from services.sharedlib.email_helper import quick_send
 
 db = DBHelper()
 gatekeeper = RBACGatekeeper()

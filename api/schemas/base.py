@@ -1,17 +1,17 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BaseResponse(BaseModel):
-    status: str = "success"
-    message: str = "Success"
+    status: str = Field(default="success")
+    message: str = Field(default="Success")
 
 
 class ErrorResponse(BaseModel):
-    error: str
-    message: str
-    details: Any | None = None
+    error: str = Field(...)
+    message: str = Field(...)
+    details: Any | None = Field(default=None)
 
     model_config = ConfigDict(
         json_schema_extra={
