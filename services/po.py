@@ -40,8 +40,11 @@ def generate_next_po_id() -> str:
 
 
 def create_po(pr_id: str | None, proc_item: list, user_id: str | None):
+    if not gatekeeper.is_authorized(user_id, "create_po"):
+        raise ForbiddenException("Error: Access Denied. You do not have permission to create POs.")
+
     if not validate_pr_status(pr_id):
-        return False
+        raise BadRequestException("Error: Cannot create PO. The parent PR must be in 'Approved' status.")
 
     item_master = db.extract("item", fields=["item_id", "supplier_id"])
     created_pos: list[str] = []

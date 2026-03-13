@@ -4,6 +4,9 @@ roles:
     - "modify_role"
   Procurement Manager:
     - "review_pr"
+    - "create_po"
+  Procurement Officer:
+    - "create_po"
   Warehouse Personnel:
     - "update_inventory"
     - "count_inventory"
