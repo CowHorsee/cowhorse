@@ -169,6 +169,8 @@ def search_user(email: str | None = None, name: str | None = None, role_name: st
         df = df[df["name"].str.contains(name, case=False, na=False)]
     if role_name:
         roles = db.extract("dim_role")
+        df["role_id"] = df["role_id"].astype(str)
+        roles["role_id"] = roles["role_id"].astype(str)
         df = df.merge(roles, on="role_id")
         df = df[df["role_name"] == role_name]
 
