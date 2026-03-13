@@ -31,6 +31,11 @@ def generate_next_pr_id() -> str:
 
 
 def procurement_alert(item_name: str | None, predicted_demand, justification: str | None):
+    # Early validation: Check if item exists in item master
+    item_master = db.extract("item", fields=["item_name"])
+    if not item_name or item_master[item_master["item_name"].str.lower() == item_name.lower()].empty:
+        return f"Error: Item '{item_name}' not found in the item list."
+
     from services.warehouse import count_inventory
 
     current_stock = count_inventory(item_name)
