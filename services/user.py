@@ -171,7 +171,7 @@ def search_user(email: str | None = None, name: str | None = None, role_name: st
         roles = db.extract("dim_role")
         df["role_id"] = df["role_id"].astype(str)
         roles["role_id"] = roles["role_id"].astype(str)
-        df = df.merge(roles, on="role_id")
+        df = df.merge(roles, on="role_id", how="left")
         df = df[df["role_name"] == role_name]
 
     return _serialize_users(df)
