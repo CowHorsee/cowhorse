@@ -3,6 +3,7 @@ import os
 import pandas as pd
 
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.exceptions import NotFoundException
 
 
 db = DBHelper()
@@ -10,7 +11,7 @@ db = DBHelper()
 
 def update_inventory(incoming_csv_path: str | None) -> str:
     if not incoming_csv_path or not os.path.exists(incoming_csv_path):
-        return "Error: Incoming file not found."
+        raise NotFoundException("Error: Incoming file not found.")
 
     new_stock_df = pd.read_csv(incoming_csv_path)
     new_stock_df["last_updated_at"] = get_now()

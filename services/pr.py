@@ -5,6 +5,11 @@ import pandas as pd
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now
 from services.sharedlib.email_helper import quick_send
+from services.sharedlib.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+)
 
 
 db = DBHelper()
@@ -34,7 +39,7 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
     # Early validation: Check if item exists in item master
     item_master = db.extract("item", fields=["item_name"])
     if not item_name or item_master[item_master["item_name"].str.lower() == item_name.lower()].empty:
-        return f"Error: Item '{item_name}' not found in the item list."
+        raise BadRequestException(f"Error: Item '{item_name}' not found in the item list.")
 
     from services.warehouse import count_inventory
 
@@ -72,7 +77,7 @@ def create_pr(user_id: str | None, proc_item: dict, justification: str | None):
         if item_master[item_master["item_name"] == name].empty:
             invalid_items.append(name)
     if invalid_items:
-        return f"Error: Invalid items found: {', '.join(invalid_items)}"
+        raise BadRequestException(f"Error: Invalid items found: {', '.join(invalid_items)}")
 
     new_pr_id = generate_next_pr_id()
     status_id = 2 if user_id else 1
@@ -112,9 +117,9 @@ def create_pr(user_id: str | None, proc_item: dict, justification: str | None):
 def accept_pr_suggestion(pr_id: str | None, officer_id: str | None) -> str:
     pr = db.extract("purchase_request", conditions={"pr_id": pr_id})
     if pr.empty:
-        return "Error: PR does not exist."
+        raise NotFoundException("Error: PR does not exist.")
     if int(pr.iloc[0]["status_id"]) != 1:
-        return "Error: Only AI suggestions can be accepted."
+        raise BadRequestException("Error: Only AI suggestions can be accepted.")
 
     now_ts = get_now()
     updates = {
@@ -131,15 +136,15 @@ def accept_pr_suggestion(pr_id: str | None, officer_id: str | None) -> str:
 def modify_pr(user_id: str | None, pr_id: str | None, proc_item: dict, justification: str | None) -> str:
     pr = db.extract("purchase_request", conditions={"pr_id": pr_id})
     if pr.empty:
-        return "Error: PR not found."
+        raise NotFoundException("Error: PR not found.")
 
     role = gatekeeper.get_user_role(user_id)
     current_status = int(pr.iloc[0]["status_id"])
 
     if role == "Procurement Officer" and current_status != 1:
-        return "Error: Officers can only modify AI suggestions (Status 1)."
+        raise ForbiddenException("Error: Officers can only modify AI suggestions (Status 1).")
     if role == "Procurement Manager" and current_status != 2:
-        return "Error: Managers can only modify submitted requests (Status 2)."
+        raise ForbiddenException("Error: Managers can only modify submitted requests (Status 2).")
 
     full_df = db.extract("purchase_request")
     if not full_df.empty:
@@ -224,7 +229,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
 
     header_df = db.extract("purchase_request", conditions=conditions)
     if header_df.empty:
-        return "Error: PR not found or unauthorized access."
+        raise NotFoundException("Error: PR not found or unauthorized access.")
 
     status_df = db.extract("dim_status")
     header_df["status_id"] = header_df["status_id"].astype(str)
@@ -250,13 +255,13 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
 
 def review_pr(pr_id: str | None, decision: str | None, manager_id: str | None):
     if not gatekeeper.is_authorized(manager_id, "review_pr"):
-        return "Error: Access Denied."
+        raise ForbiddenException("Error: Access Denied.")
 
     pr = db.extract("purchase_request", conditions={"pr_id": pr_id})
     if pr.empty:
-        return "Error: PR not found."
+        raise NotFoundException("Error: PR not found.")
     if int(pr.iloc[0]["status_id"]) != 2:
-        return "Error: PR is not in a 'Pending Review' state."
+        raise BadRequestException("Error: PR is not in a 'Pending Review' state.")
 
     status_code = 4 if (decision or "").lower() == "approve" else 3
     updates = {"status_id": status_code, "reviewed_at": get_now(), "reviewed_by": manager_id}

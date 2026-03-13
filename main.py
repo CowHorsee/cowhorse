@@ -7,6 +7,13 @@ from fastapi.responses import JSONResponse
 from api.router import api_router
 from core.logging_middleware import log_http_payloads
 from api.schema.schema_base import error_response
+from services.sharedlib.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+    ServiceException,
+    UnauthorizedException,
+)
 
 
 def configure_logging() -> None:
@@ -131,6 +138,27 @@ def create_app() -> FastAPI:
                 message="Internal server error",
                 details=[str(exc)],
                 error="InternalServerError",
+            ).model_dump(),
+        )
+
+    @app.exception_handler(ServiceException)
+    async def service_exception_handler(_: Request, exc: ServiceException):
+        status_code = 500
+        if isinstance(exc, BadRequestException):
+            status_code = 400
+        elif isinstance(exc, UnauthorizedException):
+            status_code = 401
+        elif isinstance(exc, ForbiddenException):
+            status_code = 403
+        elif isinstance(exc, NotFoundException):
+            status_code = 404
+
+        return JSONResponse(
+            status_code=status_code,
+            content=error_response(
+                message=exc.message,
+                details=[exc.message],
+                error=_error_name_for_status(status_code),
             ).model_dump(),
         )
 

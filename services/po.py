@@ -4,6 +4,11 @@ import pandas as pd
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+)
 
 
 db = DBHelper()
@@ -115,17 +120,17 @@ def get_po_details(user_id: str | None, po_id: str | None):
     role = gatekeeper.get_user_role(user_id)
     po_header_df = db.extract("purchase_order", conditions={"po_id": po_id})
     if po_header_df.empty:
-        return "Error: Purchase Order not found."
+        raise NotFoundException("Error: Purchase Order not found.")
 
     po_data = po_header_df.iloc[0]
     if role == "Supplier":
         if po_data["supplier_id"] != user_id:
-            return "Error: Access Denied. You are not the supplier for this PO."
+            raise ForbiddenException("Error: Access Denied. You are not the supplier for this PO.")
     elif role == "Warehouse Personnel":
         if int(po_data["status"]) not in [6, 7, 8, 9]:
-            return "Error: Access Denied. This PO is not in a state accessible to Warehouse."
+            raise ForbiddenException("Error: Access Denied. This PO is not in a state accessible to Warehouse.")
     else:
-        return "Error: Access Denied. Unauthorized role."
+        raise ForbiddenException("Error: Access Denied. Unauthorized role.")
 
     status_df = db.extract("dim_status")
     po_header_df["status"] = po_header_df["status"].astype(str)
@@ -163,16 +168,16 @@ def get_po_details(user_id: str | None, po_id: str | None):
 
 def update_po_status(supplier_id: str | None, po_id: str | None, status_name: str | None):
     if not gatekeeper.is_authorized(supplier_id, "update_po_status"):
-        return "Error: Access Denied. You do not have permission to update PO status."
+        raise ForbiddenException("Error: Access Denied. You do not have permission to update PO status.")
 
     status_df = db.extract("dim_status", conditions={"status_name": status_name})
     if status_df.empty:
-        return f"Error: Status '{status_name}' is not valid."
+        raise BadRequestException(f"Error: Status '{status_name}' is not valid.")
 
     new_status_id = status_df.iloc[0]["status_id"]
     po_check = db.extract("purchase_order", conditions={"po_id": po_id})
     if po_check.empty:
-        return "Error: Purchase Order not found."
+        raise NotFoundException("Error: Purchase Order not found.")
 
     db.modify("purchase_order", {"status": int(new_status_id)}, {"po_id": po_id})
     return True
