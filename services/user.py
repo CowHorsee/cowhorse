@@ -71,6 +71,7 @@ def register(
                 "raw_password": raw_password,
                 "role_id": role_id,
                 "created_at": get_now(),
+                "last_modified_timestamp": get_now(),
             }
         ]
     )
@@ -96,7 +97,7 @@ def forget_password(user_id: str | None):
 
     new_raw_pw = str(uuid.uuid4())[:8]
     new_hash = bcrypt.hashpw(new_raw_pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    db.modify("user", {"password_hash": new_hash}, {"user_id": user_id})
+    db.modify("user", {"password_hash": new_hash, "last_modified_timestamp": get_now()}, {"user_id": user_id})
 
     user_email = user_df.iloc[0]["email"]
     quick_send(
@@ -135,7 +136,7 @@ def change_password(user_id: str | None, old_password: str | None, new_password:
     stored_hash = str(user_data["password_hash"]).encode("utf-8")
     if old_password and new_password and bcrypt.checkpw(old_password.encode("utf-8"), stored_hash):
         new_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        db.modify("user", {"password_hash": new_hash}, {"user_id": user_id})
+        db.modify("user", {"password_hash": new_hash, "last_modified_timestamp": get_now()}, {"user_id": user_id})
         return "Success: Password has been changed."
 
     return "Error: Incorrect old password."
