@@ -17,5 +17,5 @@ def api_count_inventory(item_name: str | None = Query(default=None)):
 
 @router.post("/update_inventory", response_model=UpdateInventoryResponse, responses=ERROR_RESPONSES)
 def api_update_inventory(body: UpdateInventoryRequest):
-    result = update_inventory(body.incoming_csv_path)
+    result = update_inventory(body.csv_content)
     return success_response(message="Inventory updated successfully", data=result)
