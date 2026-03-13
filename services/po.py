@@ -58,6 +58,7 @@ def create_po(pr_id: str | None, proc_item: list, user_id: str | None):
             [
                 {
                     "po_id": new_po_id,
+                    "pr_id": pr_id,
                     "status": 5,
                     "supplier_id": supplier_id,
                     "created_at": get_now(),
@@ -85,8 +86,24 @@ def get_po_ticket(user_id: str | None):
         po_df = db.extract("purchase_order")
         if not po_df.empty:
             po_df = po_df[po_df["status"].astype(int).isin([6, 7, 8, 9])]
+    elif role == "Procurement Officer":
+        po_df = db.extract("purchase_order", conditions={"created_by": user_id})
+    elif role == "Procurement Manager":
+        # Managers see POs from PRs they approved
+        all_pos = db.extract("purchase_order")
+        if all_pos.empty:
+            po_df = all_pos
+        else:
+            all_prs = db.extract("purchase_request")
+            if all_prs.empty:
+                po_df = pd.DataFrame()
+            else:
+                # Filter PRs approved by this manager
+                my_prs = all_prs[all_prs["reviewed_by"] == user_id]
+                # Join POs with these PRs
+                po_df = all_pos.merge(my_prs[["pr_id"]], on="pr_id", how="inner")
     else:
-        return "Error: Access Denied. Unauthorized role."
+        raise ForbiddenException("Error: Access Denied. Unauthorized role.")
 
     if po_df.empty:
         return []
@@ -112,7 +129,9 @@ def get_po_ticket(user_id: str | None):
     if "user_id" in merged_df.columns:
         merged_df = merged_df.drop(columns=["user_id"])
 
-    result = merged_df[["po_id", "status", "status_name", "created_at", "creator_role"]]
+    # Ensure pr_id is included in the output
+    cols = ["po_id", "pr_id", "status", "status_name", "created_at", "creator_role"]
+    result = merged_df[[c for c in cols if c in merged_df.columns]]
     return result.to_dict(orient="records")
 
 
@@ -123,14 +142,21 @@ def get_po_details(user_id: str | None, po_id: str | None):
         raise NotFoundException("Error: Purchase Order not found.")
 
     po_data = po_header_df.iloc[0]
+    pr_id = po_data.get("pr_id")
+    pr_header = db.extract("purchase_request", conditions={"pr_id": pr_id}) if pr_id else pd.DataFrame()
+
+    authorized = False
     if role == "Supplier":
-        if po_data["supplier_id"] != user_id:
-            raise ForbiddenException("Error: Access Denied. You are not the supplier for this PO.")
+        authorized = po_data["supplier_id"] == user_id
     elif role == "Warehouse Personnel":
-        if int(po_data["status"]) not in [6, 7, 8, 9]:
-            raise ForbiddenException("Error: Access Denied. This PO is not in a state accessible to Warehouse.")
-    else:
-        raise ForbiddenException("Error: Access Denied. Unauthorized role.")
+        authorized = int(po_data["status"]) in [6, 7, 8, 9]
+    elif role == "Procurement Officer":
+        authorized = po_data["created_by"] == user_id
+    elif role == "Procurement Manager":
+        authorized = not pr_header.empty and pr_header.iloc[0]["reviewed_by"] == user_id
+
+    if not authorized:
+        raise ForbiddenException("Error: Access Denied. You do not have permission to view this PO.")
 
     status_df = db.extract("dim_status")
     po_header_df["status"] = po_header_df["status"].astype(str)
@@ -142,24 +168,48 @@ def get_po_details(user_id: str | None, po_id: str | None):
         how="left",
     )
 
-    user_df = db.extract("user", fields=["user_id", "role_id"])
+    user_df = db.extract("user", fields=["user_id", "name", "email", "role_id"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
+
+    # PO Creator (Officer)
     po_header_df = po_header_df.merge(
-        user_with_role[["user_id", "role_name"]],
+        user_with_role[["user_id", "role_name", "name", "email"]],
         left_on="created_by",
         right_on="user_id",
         how="left",
     )
-    po_header_df = po_header_df.rename(columns={"role_name": "creator_role"})
+    po_header_df = po_header_df.rename(columns={"role_name": "creator_role", "name": "officer_name", "email": "officer_email"})
+
+    po_details = po_header_df.iloc[0].to_dict()
+
+    # Supplier Details
+    supplier_df = db.extract("supplier", conditions={"supplier_id": po_data["supplier_id"]})
+    if not supplier_df.empty:
+        po_details["supplier"] = {"name": supplier_df.iloc[0]["name"], "email": supplier_df.iloc[0]["email"]}
+    else:
+        po_details["supplier"] = None
+
+    # Officer (Details already fetched from po_header_df join)
+    po_details["officer"] = {"name": po_details.get("officer_name"), "email": po_details.get("officer_email")}
+
+    # Manager (PR Reviewer)
+    if not pr_header.empty:
+        reviewer_id = pr_header.iloc[0].get("reviewed_by")
+        reviewer_user = user_df[user_df["user_id"] == reviewer_id]
+        if not reviewer_user.empty:
+            po_details["manager"] = {"name": reviewer_user.iloc[0]["name"], "email": reviewer_user.iloc[0]["email"]}
+        else:
+            po_details["manager"] = None
+    else:
+        po_details["manager"] = None
 
     bridge_df = db.extract("purchase_item_bridge", conditions={"doc_id": po_id})
     item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
     details_df = bridge_df.merge(item_master, on="item_id", how="left")
 
-    po_details = po_header_df.iloc[0].to_dict()
     po_details["items"] = details_df[["item_id", "item_name", "quantity", "unit_price"]].to_dict(
         orient="records"
     )
