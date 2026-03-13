@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from db.table_storage import DBHelper, sanitize_key
+from services.sharedlib.db_helper.table_storage import DBHelper, sanitize_key
 
 
 def _resolve_dataset_dir() -> str:

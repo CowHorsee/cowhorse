@@ -4,9 +4,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from api.v1.router import api_router
+from api.router import api_router
 from core.logging_middleware import log_http_payloads
-from api.schemas.base import error_response
+from api.schema.schema_base import error_response
 
 
 def configure_logging() -> None:
@@ -150,3 +150,4 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+

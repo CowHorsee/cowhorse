@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from db.table_storage import DBHelper
+from services.sharedlib.db_helper.table_storage import DBHelper
 
 
 class RBACGatekeeper:
