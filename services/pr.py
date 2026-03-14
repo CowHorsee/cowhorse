@@ -64,9 +64,8 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
                 if officer_emails:
                     quick_send(
                         template_type="PROCUREMENT_ALERT",
-                        recipient_email=officer_emails[0],
+                        recipient_email=officer_emails,
                         subject=f"AI Alert: Predicted Shortage for {item_name}",
-                        cc_emails=officer_emails[1:],
                         item_name=item_name,
                         predicted_demand=predicted_demand,
                         current_stock=current_stock,

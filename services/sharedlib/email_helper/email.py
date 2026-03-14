@@ -25,7 +25,7 @@ class EmailHelper:
 
     def send_email(
         self,
-        recipient_email: str,
+        recipient_email: str | list[str],
         subject: str,
         template_name: str,
         template_data: dict | None = None,
@@ -50,10 +50,15 @@ class EmailHelper:
             msg = MIMEMultipart("alternative")
             from_email = self.sender_email or "system@cowhorse.com"
             msg["From"] = from_email
-            msg["To"] = recipient_email
+            
+            if isinstance(recipient_email, list):
+                msg["To"] = ", ".join(recipient_email)
+                all_recipients = list(recipient_email)
+            else:
+                msg["To"] = recipient_email
+                all_recipients = [recipient_email]
+                
             msg["Subject"] = subject
-
-            all_recipients = [recipient_email]
             if cc_emails:
                 if isinstance(cc_emails, list):
                     msg["Cc"] = ", ".join(cc_emails)
@@ -112,7 +117,7 @@ class EmailHelper:
 
 
 def quick_send(
-    recipient_email: str | None = None,
+    recipient_email: str | list[str] | None = None,
     subject: str | None = None,
     template_name: str = "email_templates.html",
     template_data: dict | None = None,
