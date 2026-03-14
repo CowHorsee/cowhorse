@@ -53,7 +53,7 @@ async def api_create_pr(body: CreatePRRequest):
                 managers = db.extract("user", conditions={"role_id": int(manager_role_id)})
                 manager_emails = managers["email"].tolist() if not managers.empty else []
                 if manager_emails:
-                    item_count = sum(body.proc_item.values())
+                    item_count = sum(sum(d.values()) for d in body.proc_item)
                     quick_send(
                         template_type="PURCHASE_REQUEST",
                         recipient_email=manager_emails[0],

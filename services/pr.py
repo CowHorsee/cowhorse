@@ -52,7 +52,7 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
                 break
 
     if item_name and (float(predicted_demand) * THRESHOLD_PERCENTAGE) > current_stock:
-        proc_item = {item_name: int(float(predicted_demand) - current_stock)}
+        proc_item = [{item_name: int(float(predicted_demand) - current_stock)}]
         result = create_pr(user_id=None, proc_item=proc_item, justification=justification)
 
         if isinstance(result, dict) and "pr_id" in result:
@@ -76,10 +76,16 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
     return "Stock level sufficient. No PR triggered."
 
 
-def create_pr(user_id: str | None, proc_item: dict, justification: str | None):
+def create_pr(user_id: str | None, proc_item: list[dict], justification: str | None):
     item_master = db.extract("item", fields=["item_id", "item_name"])
+    
+    aggregated_items = {}
+    for item_dict in proc_item:
+        for name, qty in item_dict.items():
+            aggregated_items[name] = aggregated_items.get(name, 0) + qty
+
     invalid_items = []
-    for name in proc_item.keys():
+    for name in aggregated_items.keys():
         if item_master[item_master["item_name"] == name].empty:
             invalid_items.append(name)
     if invalid_items:
@@ -107,7 +113,7 @@ def create_pr(user_id: str | None, proc_item: dict, justification: str | None):
     db.load("purchase_request", new_pr_header, mode="append")
 
     bridge_data = []
-    for name, qty in proc_item.items():
+    for name, qty in aggregated_items.items():
         match = item_master[item_master["item_name"] == name]
         if not match.empty:
             bridge_data.append(
@@ -139,7 +145,7 @@ def accept_pr_suggestion(pr_id: str | None, officer_id: str | None) -> str:
     return f"PR {pr_id} successfully accepted by Officer."
 
 
-def modify_pr(user_id: str | None, pr_id: str | None, proc_item: dict, justification: str | None) -> str:
+def modify_pr(user_id: str | None, pr_id: str | None, proc_item: list[dict], justification: str | None) -> str:
     pr = db.extract("purchase_request", conditions={"pr_id": pr_id})
     if pr.empty:
         raise NotFoundException("Error: PR not found.")
@@ -169,8 +175,14 @@ def modify_pr(user_id: str | None, pr_id: str | None, proc_item: dict, justifica
 
     db.delete("purchase_item_bridge", {"doc_id": pr_id})
     item_master = db.extract("item", fields=["item_id", "item_name"])
+    
+    aggregated_items = {}
+    for item_dict in proc_item:
+        for name, qty in item_dict.items():
+            aggregated_items[name] = aggregated_items.get(name, 0) + qty
+            
     new_bridge = []
-    for name, qty in proc_item.items():
+    for name, qty in aggregated_items.items():
         match = item_master[item_master["item_name"] == name]
         if not match.empty:
             new_bridge.append(

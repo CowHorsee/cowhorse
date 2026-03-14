@@ -5,7 +5,7 @@ from api.schema.schema_base import BaseResponse
 
 class CreatePRRequest(BaseModel):
     user_id: str
-    proc_item: dict[str, int]
+    proc_item: list[dict[str, int]]
     justification: str
 
 
@@ -17,7 +17,7 @@ class AcceptPRSuggestionRequest(BaseModel):
 class ModifyPRRequest(BaseModel):
     user_id: str
     pr_id: str
-    proc_item: dict[str, int]
+    proc_item: list[dict[str, int]]
     justification: str
 
 
