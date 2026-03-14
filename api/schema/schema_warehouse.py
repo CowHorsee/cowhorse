@@ -4,7 +4,7 @@ from api.schema.schema_base import BaseResponse
 
 
 class UpdateInventoryRequest(BaseModel):
-    incoming_csv_path: str
+    csv_content: str
 
 
 class CountInventoryResponse(BaseResponse):

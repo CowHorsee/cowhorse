@@ -15,8 +15,14 @@ class UpdatePOStatusRequest(BaseModel):
     status_name: str
 
 
+class UserContact(BaseModel):
+    name: str | None = None
+    email: str | None = None
+
+
 class POTicketResponse(BaseModel):
     po_id: str
+    pr_id: str | None = None
     status: str | int
     status_name: str | None = None
     created_at: str | None = None
@@ -32,6 +38,7 @@ class POItemResponse(BaseModel):
 
 class PODetailsResponse(BaseModel):
     po_id: str
+    pr_id: str | None = None
     status: str | int
     supplier_id: str | int
     created_at: str | None = None
@@ -39,6 +46,9 @@ class PODetailsResponse(BaseModel):
     status_id: str | None = None
     status_name: str | None = None
     creator_role: str | None = None
+    supplier: UserContact | None = None
+    officer: UserContact | None = None
+    manager: UserContact | None = None
     items: list[POItemResponse]
 
 
