@@ -151,7 +151,12 @@ def api_review_pr(body: ReviewPRRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/procurement_alert", response_model=ProcurementAlertResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/procurement_alert", 
+    response_model=ProcurementAlertResponse, 
+    responses=ERROR_RESPONSES,
+    description="Endpoint to trigger procurement alert based on predicted demand. Used by Foundry AI agent to trigger when certain demand thresholds are met."
+)             
 def api_procurement_alert(body: ProcurementAlertRequest):
     try:
         result = procurement_alert(body.item_name, body.predicted_demand, body.justification)

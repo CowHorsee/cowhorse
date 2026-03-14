@@ -7,7 +7,13 @@ from services.warehouse import count_inventory, update_inventory
 router = APIRouter(prefix="/warehouse", tags=["Warehouse"])
 
 
-@router.get("/count_inventory", response_model=CountInventoryResponse, responses=ERROR_RESPONSES)
+@router.get(
+    "/count_inventory", 
+    response_model=CountInventoryResponse, 
+    responses=ERROR_RESPONSES
+        description="Endpoint to count inventory items. If item_name is provided, returns count for that item. If no item_name is provided, returns count for all items."
+
+    )
 def api_count_inventory(item_name: str | None = Query(default=None)):
     try:
         return success_response(
