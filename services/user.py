@@ -127,10 +127,23 @@ def modify_role(admin_id: str | None, user_id: str | None, new_role_name: str | 
         raise BadRequestException("Error: New role name is invalid.")
 
     new_role_id = int(role_df.iloc[0]["role_id"])
-    if db.extract("user", conditions={"user_id": user_id}).empty:
+    user_df = db.extract("user", conditions={"user_id": user_id})
+    if user_df.empty:
         raise NotFoundException("Error: User not found.")
 
     db.modify("user", {"role_id": new_role_id}, {"user_id": user_id})
+
+    user_email = user_df.iloc[0]["email"]
+    user_name = user_df.iloc[0]["name"]
+
+    quick_send(
+        template_type="ROLE_CHANGED",
+        recipient_email=user_email,
+        subject="Your Role Has Been Updated - Team Cow Horse",
+        name=user_name,
+        new_role_name=new_role_name
+    )
+
     return "Success: User role updated."
 
 

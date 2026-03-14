@@ -169,6 +169,25 @@
                     In Now</a>
             </div>
 
+            {% elif template_type == 'ROLE_CHANGED' %}
+            <h2>Role Update Notification</h2>
+            <p>Hello <span class="highlight">{{ name }}</span>,</p>
+            <p>An administrator has updated your account role in the Procurement Planning Intelligent System.</p>
+
+            <table class="info-table">
+                <tr>
+                    <td class="info-label">New Role:</td>
+                    <td class="info-value highlight">{{ new_role_name }}</td>
+                </tr>
+            </table>
+
+            <p>If you believe this change was made in error, please contact your administrator.</p>
+
+            <div class="button-container">
+                <a href="{{ login_url }}" class="button" style="color: #FFFFFF !important; text-decoration: none;">Log
+                    In Now</a>
+            </div>
+
             {% elif template_type == 'PROCUREMENT_ALERT' %}
             <h2>Automated Procurement Alert</h2>
             <p>The AI system has detected a potential stock shortage that requires your attention.</p>
