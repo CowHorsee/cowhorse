@@ -4,7 +4,7 @@ import bcrypt
 import pandas as pd
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
-from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
 from services.sharedlib.email_helper import quick_send
 from services.sharedlib.exceptions import (
     BadRequestException,
@@ -24,6 +24,7 @@ def _serialize_users(df: pd.DataFrame) -> list[dict]:
         return []
 
     sanitized_df = df.drop(columns=[col for col in SENSITIVE_USER_COLUMNS if col in df.columns])
+    sanitized_df = format_timestamps_to_gmt8(sanitized_df, ["created_at", "last_modified_timestamp"])
     return sanitized_df.to_dict(orient="records")
 
 

@@ -3,7 +3,7 @@ import io
 
 import pandas as pd
 
-from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
 from services.sharedlib.exceptions import BadRequestException, NotFoundException
 
 
@@ -27,6 +27,7 @@ def update_inventory(csv_content: str | None) -> str:
     new_stock_df["last_updated_at"] = get_now()
     db.upsert("warehouse_stock", new_stock_df, id_col="item_id")
     updated_full_df = db.extract("warehouse_stock")
+    updated_full_df = format_timestamps_to_gmt8(updated_full_df, ["last_updated_at"])
     return updated_full_df.to_csv(index=False)
 
 

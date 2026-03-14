@@ -13,6 +13,21 @@ def get_now() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
+def format_timestamps_to_gmt8(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    if df.empty:
+        return df
+    for col in columns:
+        if col in df.columns:
+            try:
+                # Convert to datetime and explicitly format to string with GMT+8 offset
+                df[col] = pd.to_datetime(df[col], format="mixed", errors="coerce").dt.strftime("%Y-%m-%dT%H:%M:%S+08:00")
+                # Clean up NaNs
+                df[col] = df[col].where(pd.notnull(df[col]), None)
+            except Exception:
+                pass
+    return df
+
+
 def sanitize_key(key: object) -> str:
     if key is None or key == "":
         return "unknown"

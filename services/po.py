@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
-from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
 from services.sharedlib.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -135,6 +135,7 @@ def get_po_ticket(user_id: str | None):
     # Ensure pr_id is included in the output
     cols = ["po_id", "pr_id", "status", "status_name", "created_at", "creator_role"]
     result = merged_df[[c for c in cols if c in merged_df.columns]]
+    result = format_timestamps_to_gmt8(result, ["created_at"])
     return result.to_dict(orient="records")
 
 
@@ -185,6 +186,7 @@ def get_po_details(user_id: str | None, po_id: str | None):
         how="left",
     )
     po_header_df = po_header_df.rename(columns={"role_name": "creator_role", "name": "officer_name", "email": "officer_email"})
+    po_header_df = format_timestamps_to_gmt8(po_header_df, ["created_at"])
 
     po_details = po_header_df.iloc[0].to_dict()
 

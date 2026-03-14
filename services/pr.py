@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
-from services.sharedlib.db_helper.db_helper import DBHelper, get_now
+from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
 from services.sharedlib.email_helper import quick_send
 from services.sharedlib.exceptions import (
     BadRequestException,
@@ -206,6 +206,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
     if "user_id" in pr_df.columns:
         pr_df = pr_df.drop(columns=["user_id"])
 
+    pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
     return pr_df.to_dict(orient="records")
 
 
@@ -255,6 +256,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
         how="left",
     )
     header_df = header_df.rename(columns={"role_name": "creator_role"})
+    header_df = format_timestamps_to_gmt8(header_df, ["created_at", "last_modified_at", "reviewed_at"])
 
     items = db.extract("purchase_item_bridge", conditions={"doc_id": pr_id})
     return {"header": header_df.iloc[0].to_dict(), "items": items.to_dict(orient="records")}
