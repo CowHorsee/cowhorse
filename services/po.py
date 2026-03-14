@@ -4,6 +4,7 @@ import pandas as pd
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
+from services.sharedlib.email_helper.email import quick_send
 from services.sharedlib.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -76,6 +77,43 @@ def create_po(pr_id: str | None, proc_item: list, user_id: str | None):
         for item_id, qty in po_items_dict.items():
             bridge_entries.append({"doc_id": new_po_id, "item_id": item_id, "quantity": qty})
         db.load("purchase_item_bridge", pd.DataFrame(bridge_entries), mode="append")
+
+        # Get emails for notifications
+        supplier_email = None
+        supplier_df = db.extract("supplier", conditions={"supplier_id": supplier_id})
+        if not supplier_df.empty:
+            supplier_email = supplier_df.iloc[0]["email"]
+
+        officer_email = None
+        user_df = db.extract("user", conditions={"user_id": user_id})
+        if not user_df.empty:
+            officer_email = user_df.iloc[0]["email"]
+
+        manager_email = None
+        pr_header = db.extract("purchase_request", conditions={"pr_id": pr_id})
+        if not pr_header.empty:
+            reviewer_id = pr_header.iloc[0].get("reviewed_by")
+            if reviewer_id:
+                reviewer_user = db.extract("user", conditions={"user_id": reviewer_id})
+                if not reviewer_user.empty:
+                    manager_email = reviewer_user.iloc[0]["email"]
+
+        if supplier_email:
+            cc_list = []
+            if officer_email:
+                cc_list.append(officer_email)
+            if manager_email:
+                cc_list.append(manager_email)
+
+            from datetime import date
+            quick_send(
+                template_type="PURCHASE_ORDER",
+                recipient_email=supplier_email,
+                subject=f"New Purchase Order: {new_po_id}",
+                cc_emails=cc_list if cc_list else None,
+                doc_id=new_po_id,
+                date=date.today().strftime("%Y-%m-%d"),
+            )
 
     db.delete("purchase_item_bridge", conditions={"doc_id": pr_id})
     return created_pos
