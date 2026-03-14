@@ -229,7 +229,15 @@ def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | N
     if pr_id:
         conditions["pr_id"] = pr_id
     if status:
-        conditions["status_id"] = int(status)
+        if status.isdigit():
+            conditions["status_id"] = int(status)
+        else:
+            status_df = db.extract("dim_status")
+            status_match = status_df[status_df["status_name"].str.lower() == status.lower()]
+            if not status_match.empty:
+                conditions["status_id"] = int(status_match.iloc[0]["status_id"])
+            else:
+                return []
 
     pr_df = db.extract("purchase_request", conditions=conditions)
     return _enrich_pr_records(pr_df)
