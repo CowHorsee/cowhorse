@@ -11,13 +11,13 @@ router = APIRouter(prefix="/warehouse", tags=["Warehouse"])
     "/count_inventory", 
     response_model=CountInventoryResponse, 
     responses=ERROR_RESPONSES,
-    description="Endpoint to count inventory items. If item_name is provided, returns count for that item. If no item_name is provided, returns count for all items."
+    description="Endpoint to count inventory items. If query is provided, returns items matching item_id or item_name. If no query is provided, returns count for all items."
 
     )
-def api_count_inventory(item_name: str | None = Query(default=None)):
+def api_count_inventory(query: str | None = Query(default=None, alias="item_name")):
     return success_response(
         message="Inventory count retrieved successfully",
-        data=count_inventory(item_name),
+        data=count_inventory(query),
     )
 
 

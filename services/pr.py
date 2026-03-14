@@ -43,7 +43,14 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
 
     from services.warehouse import count_inventory
 
-    current_stock = count_inventory(item_name)
+    current_stock = 0
+    inventory_items = count_inventory(item_name)
+    if inventory_items:
+        for item in inventory_items:
+            if item["item_name"].lower() == item_name.lower() or item["item_id"].lower() == item_name.lower():
+                current_stock = item["quantity"]
+                break
+
     if item_name and (float(predicted_demand) * THRESHOLD_PERCENTAGE) > current_stock:
         proc_item = {item_name: int(float(predicted_demand) - current_stock)}
         result = create_pr(user_id=None, proc_item=proc_item, justification=justification)

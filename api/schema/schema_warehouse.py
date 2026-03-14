@@ -7,8 +7,10 @@ class UpdateInventoryRequest(BaseModel):
     csv_content: str
 
 
+from typing import Any
+
 class CountInventoryResponse(BaseResponse):
-    data: int | dict[str, int]
+    data: list[dict[str, Any]]
 
 
 class UpdateInventoryResponse(BaseResponse):

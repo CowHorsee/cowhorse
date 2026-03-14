@@ -30,16 +30,23 @@ def update_inventory(csv_content: str | None) -> str:
     return updated_full_df.to_csv(index=False)
 
 
-def count_inventory(item_name: str | None = None):
+def count_inventory(query: str | None = None):
     stock_df = db.extract("warehouse_stock")
     item_master = db.extract("item", fields=["item_id", "item_name"])
     merged_df = stock_df.merge(item_master, on="item_id", how="left")
 
-    if item_name:
-        result = merged_df[merged_df["item_name"].str.lower() == item_name.lower()]
-        if not result.empty:
-            return int(result.iloc[0]["quantity"])
-        return 0
+    merged_df["item_name"] = merged_df["item_name"].fillna("").astype(str)
+    merged_df["item_id"] = merged_df["item_id"].fillna("").astype(str)
+    merged_df["quantity"] = merged_df["quantity"].fillna(0).astype(int)
 
-    return merged_df.set_index("item_name")["quantity"].to_dict()
+    if query:
+        query_lower = query.lower()
+        mask = (
+            merged_df["item_name"].str.lower().str.contains(query_lower) |
+            merged_df["item_id"].str.lower().str.contains(query_lower)
+        )
+        result = merged_df[mask]
+        return result[["item_id", "item_name", "quantity"]].to_dict(orient="records")
+
+    return merged_df[["item_id", "item_name", "quantity"]].to_dict(orient="records")
 
