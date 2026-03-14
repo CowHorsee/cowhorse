@@ -36,7 +36,9 @@ class ProcurementAlertRequest(BaseModel):
 class PRBridgeItemResponse(BaseModel):
     doc_id: str
     item_id: str | int
+    item_name: str | None = None
     quantity: int | float
+    unit_price: int | float | None = None
 
 
 class PRTicketResponse(BaseModel):
@@ -76,7 +78,9 @@ class PRDetailHeaderResponse(BaseModel):
 
 class PRDetailItemResponse(BaseModel):
     item_id: str | int
+    item_name: str | None = None
     quantity: int | float | None = None
+    unit_price: int | float | None = None
     doc_id: str | None = None
 
 

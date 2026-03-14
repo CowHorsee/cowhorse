@@ -33,7 +33,7 @@ def update_inventory(csv_content: str | None) -> str:
 
 def count_inventory(query: str | None = None):
     stock_df = db.extract("warehouse_stock")
-    item_master = db.extract("item", fields=["item_id", "item_name"])
+    item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
     merged_df = stock_df.merge(item_master, on="item_id", how="left")
 
     merged_df["item_name"] = merged_df["item_name"].fillna("").astype(str)
@@ -47,7 +47,7 @@ def count_inventory(query: str | None = None):
             merged_df["item_id"].str.lower().str.contains(query_lower)
         )
         result = merged_df[mask]
-        return result[["item_id", "item_name", "quantity"]].to_dict(orient="records")
+        return result[["item_id", "item_name", "quantity", "unit_price"]].to_dict(orient="records")
 
-    return merged_df[["item_id", "item_name", "quantity"]].to_dict(orient="records")
+    return merged_df[["item_id", "item_name", "quantity", "unit_price"]].to_dict(orient="records")
 
