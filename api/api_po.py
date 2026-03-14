@@ -73,7 +73,12 @@ def api_get_po_details(user_id: str = Query(...), po_id: str = Query(...)):
     return success_response(message="Purchase order details retrieved successfully", data=result)
 
 
-@router.post("/update_po_status", response_model=UpdatePOStatusResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/update_po_status", 
+    response_model=UpdatePOStatusResponse, 
+    responses=ERROR_RESPONSES,
+    description="Updates the status of a PO. The status_name field must exactly match an entry in the dim_status table (e.g., 'Pending Delivery', 'Delivered')."
+)
 def api_update_po_status(body: UpdatePOStatusRequest):
     update_po_status(body.supplier_id, body.po_id, body.status_name)
     return success_response(message="Purchase order status updated successfully", data=True)

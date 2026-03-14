@@ -291,7 +291,11 @@ def review_pr(pr_id: str | None, decision: str | None, manager_id: str | None):
     if int(pr.iloc[0]["status_id"]) != 2:
         raise BadRequestException("Error: PR is not in a 'Pending Review' state.")
 
-    status_code = 4 if (decision or "").lower() == "approve" else 3
+    decision_lower = (decision or "").lower()
+    if decision_lower in ("approve", "approved", "accept", "accepted"):
+        status_code = 4
+    else:
+        status_code = 3
     updates = {"status_id": status_code, "reviewed_at": get_now(), "reviewed_by": manager_id}
 
     full_df = db.extract("purchase_request")

@@ -43,7 +43,12 @@ def api_login(body: LoginRequest):
     )
 
 
-@router.post("/register", response_model=RegisterUserResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/register", 
+    response_model=RegisterUserResponse, 
+    responses=ERROR_RESPONSES,
+    description="Registers a new user. The role_name field must exactly match an existing role in the database (e.g., 'Procurement Officer', 'Procurement Manager', 'Supplier', 'Warehouse Personnel', 'Admin')."
+)
 def api_register(body: RegisterRequest):
     result = register(body.admin_id, body.email, body.name, body.role_name, body.password)
     return success_response(message=result, data=result)
@@ -55,7 +60,12 @@ def api_forget_password(body: ForgetPasswordRequest):
     return success_response(message=result, data=result)
 
 
-@router.post("/modify_role", response_model=ModifyRoleResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/modify_role", 
+    response_model=ModifyRoleResponse, 
+    responses=ERROR_RESPONSES,
+    description="Modifies a user's role. The new_role_name field must exactly match an existing role (e.g., 'Procurement Officer', 'Procurement Manager', 'Supplier', 'Warehouse Personnel', 'Admin')."
+)
 def api_modify_role(body: ModifyRoleRequest):
     result = modify_role(body.admin_id, body.user_id, body.new_role_name)
     return success_response(message=result, data=result)

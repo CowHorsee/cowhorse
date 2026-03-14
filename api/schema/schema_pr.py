@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from api.schema.schema_base import BaseResponse
 
 
 class CreatePRRequest(BaseModel):
     user_id: str
-    proc_item: list[dict[str, int]]
+    proc_item: list[dict[str, int]] = Field(..., description="List of dictionaries representing item name and quantity.")
     justification: str
 
 
@@ -17,13 +17,13 @@ class AcceptPRSuggestionRequest(BaseModel):
 class ModifyPRRequest(BaseModel):
     user_id: str
     pr_id: str
-    proc_item: list[dict[str, int]]
+    proc_item: list[dict[str, int]] = Field(..., description="List of dictionaries representing item name and quantity.")
     justification: str
 
 
 class ReviewPRRequest(BaseModel):
     pr_id: str
-    decision: str
+    decision: str = Field(..., description="Decision made by the manager. Accepts 'approve', 'approved', 'accept', or 'accepted' to approve. Any other value will reject the PR.")
     manager_id: str
 
 

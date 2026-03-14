@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from api.schema.schema_base import BaseResponse
 
@@ -12,7 +12,7 @@ class RegisterRequest(BaseModel):
     admin_id: str
     email: str
     name: str
-    role_name: str
+    role_name: str = Field(..., description="Must exactly match a role name in the database, e.g., 'Procurement Officer', 'Procurement Manager', 'Admin', 'Supplier', 'Warehouse Personnel'.")
     password: str | None = None
 
 
@@ -23,7 +23,7 @@ class ForgetPasswordRequest(BaseModel):
 class ModifyRoleRequest(BaseModel):
     admin_id: str
     user_id: str
-    new_role_name: str
+    new_role_name: str = Field(..., description="Must exactly match a role name in the database, e.g., 'Procurement Officer', 'Procurement Manager', 'Admin', 'Supplier', 'Warehouse Personnel'.")
 
 
 class ChangePasswordRequest(BaseModel):

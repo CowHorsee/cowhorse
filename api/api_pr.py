@@ -108,7 +108,12 @@ def api_get_pr_details(user_id: str = Query(...), pr_id: str = Query(...)):
     return success_response(message="Purchase request details retrieved successfully", data=result)
 
 
-@router.post("/review_pr", response_model=ReviewPRResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/review_pr", 
+    response_model=ReviewPRResponse, 
+    responses=ERROR_RESPONSES,
+    description="Endpoint for managers to review a purchase request. Pass exactly 'approve', 'approved', 'accept', or 'accepted' in the decision field to approve it. Any other text will reject it."
+)
 def api_review_pr(body: ReviewPRRequest):
     result = review_pr(body.pr_id, body.decision, body.manager_id)
     return success_response(message=result, data=result)

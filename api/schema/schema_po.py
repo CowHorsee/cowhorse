@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from api.schema.schema_base import BaseResponse
 
@@ -12,7 +12,7 @@ class CreatePORequest(BaseModel):
 class UpdatePOStatusRequest(BaseModel):
     supplier_id: str
     po_id: str
-    status_name: str
+    status_name: str = Field(..., description="Exact string of the new status, e.g., 'Pending Delivery', 'Delivered'. Must match dim_status precisely.")
 
 
 class UserContact(BaseModel):
