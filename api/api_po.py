@@ -28,12 +28,12 @@ async def api_create_po(body: CreatePORequest):
         officer_df = db.extract("user", conditions={"user_id": body.user_id})
         officer_email = officer_df.iloc[0]["email"] if not officer_df.empty else None
 
-        roles = db.extract("dim_role", conditions={"role_name": "Procurement Manager"})
-        manager_emails: list[str] = []
-        if not roles.empty:
-            manager_role_id = roles.iloc[0]["role_id"]
-            managers = db.extract("user", conditions={"role_id": int(manager_role_id)})
-            manager_emails = managers["email"].tolist() if not managers.empty else []
+        pr_header_df = db.extract("purchase_request", conditions={"pr_id": body.pr_id})
+        reviewer_id = pr_header_df.iloc[0].get("reviewed_by") if not pr_header_df.empty else None
+        manager_email = None
+        if reviewer_id:
+            reviewer_df = db.extract("user", conditions={"user_id": reviewer_id})
+            manager_email = reviewer_df.iloc[0]["email"] if not reviewer_df.empty else None
 
         for po_id in result:
             try:
@@ -44,11 +44,17 @@ async def api_create_po(body: CreatePORequest):
                     supplier_df = db.extract("supplier", conditions={"supplier_id": supplier_id})
                     supplier_email = supplier_df.iloc[0]["email"] if not supplier_df.empty else None
                     if supplier_email:
+                        cc_list = []
+                        if manager_email:
+                            cc_list.append(manager_email)
+                        if officer_email:
+                            cc_list.append(officer_email)
+                        
                         quick_send(
                             template_type="PURCHASE_ORDER",
                             recipient_email=supplier_email,
                             subject=f"New Purchase Order: {po_id}",
-                            cc_emails=manager_emails + ([officer_email] if officer_email else []),
+                            cc_emails=cc_list if cc_list else None,
                             attachments=[pdf_path] if pdf_path else None,
                             doc_id=po_id,
                             date=po_header.iloc[0]["created_at"][:10]

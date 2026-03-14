@@ -56,9 +56,9 @@ async def api_create_pr(body: CreatePRRequest):
                     item_count = sum(sum(d.values()) for d in body.proc_item)
                     quick_send(
                         template_type="PURCHASE_REQUEST",
-                        recipient_email=manager_emails[0],
+                        recipient_email=manager_emails,
                         subject=f"Action Required: New Purchase Request {pr_id}",
-                        cc_emails=manager_emails[1:] + ([officer_email] if officer_email else []),
+                        cc_emails=[officer_email] if officer_email else None,
                         attachments=[pdf_path] if pdf_path else None,
                         doc_id=pr_id,
                         officer_name=officer_name,

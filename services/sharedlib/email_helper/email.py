@@ -11,14 +11,17 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
+from core.config import get_settings
+
 
 class EmailHelper:
     def __init__(self):
-        self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        self.username = os.getenv("SMTP_USERNAME")
-        self.password = os.getenv("SMTP_PASSWORD")
-        self.sender_email = os.getenv("EMAIL_SENDER_ADDRESS", self.username)
+        settings = get_settings()
+        self.smtp_server = settings.smtp_server
+        self.smtp_port = settings.smtp_port
+        self.username = settings.smtp_username
+        self.password = settings.smtp_password
+        self.sender_email = settings.email_sender_address or self.username
 
         template_dir = Path(__file__).resolve().parent
         self.env = Environment(loader=FileSystemLoader(str(template_dir)))
@@ -41,6 +44,8 @@ class EmailHelper:
             # 1. Prepare data for template
             render_data = template_data.copy() if isinstance(template_data, dict) else {}
             render_data.update(kwargs)
+            if "login_url" not in render_data:
+                render_data["login_url"] = "https://purple-bay-035486b10.1.azurestaticapps.net/login"
 
             # 2. Render HTML body
             template = self.env.get_template(template_name)
