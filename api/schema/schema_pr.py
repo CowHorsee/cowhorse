@@ -124,3 +124,12 @@ class ProcurementAlertResponse(BaseResponse):
 
 class DataLoaderAPIResponse(BaseResponse):
     data: DataLoaderResponse
+class ResubmitPRRequest(BaseModel):
+    user_id: str
+    pr_id: str
+    proc_item: list[dict[str, int]] = Field(..., description="List of dictionaries representing item name and quantity.")
+    justification: str
+
+
+class ResubmitPRResponse(BaseResponse):
+    data: CreatePRResponse

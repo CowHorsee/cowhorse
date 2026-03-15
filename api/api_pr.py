@@ -14,6 +14,8 @@ from api.schema.schema_pr import (
     PRTicketListResponse,
     ProcurementAlertRequest,
     ProcurementAlertResponse,
+    ResubmitPRRequest,
+    ResubmitPRResponse,
     ReviewPRRequest,
     ReviewPRResponse,
 )
@@ -25,6 +27,7 @@ from services.pr import (
     get_pr_ticket,
     modify_pr,
     procurement_alert,
+    resubmit_pr,
     review_pr,
 )
 from services.sharedlib.db_helper.db_helper import DBHelper
@@ -100,3 +103,12 @@ async def api_procurement_alert(body: ProcurementAlertRequest):
     if isinstance(result, str):
         return success_response(message=result, data=result)
     return success_response(message="Procurement alert processed successfully", data=result)
+@router.post(
+    "/resubmit_pr", 
+    response_model=ResubmitPRResponse, 
+    responses=ERROR_RESPONSES,
+    description="Endpoint for officers to resubmit a rejected PR. Updates items and justification, and sets status to 'Pending for Approval'."
+)
+async def api_resubmit_pr(body: ResubmitPRRequest):
+    result = await resubmit_pr(body.user_id, body.pr_id, body.proc_item, body.justification)
+    return success_response(message="Purchase request resubmitted successfully", data=result)

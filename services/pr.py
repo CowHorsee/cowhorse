@@ -141,15 +141,24 @@ async def create_pr(user_id: str | None, proc_item: list[dict], justification: s
         db.load("purchase_item_bridge", load_data, mode="append")
 
     # --- Side-effects: PDF Generation and Email Notification ---
+    await _trigger_pr_notifications(new_pr_id, user_id, aggregated_items)
+
+    return {"pr_id": new_pr_id, "status": status_id, "items": bridge_data}
+
+
+async def _trigger_pr_notifications(pr_id: str, user_id: str | None, aggregated_items: dict):
+    """
+    Private helper to generate PDF and send email notifications to managers.
+    """
     try:
-        logger.info(f"Starting post-PR-creation side effects for {new_pr_id}")
+        logger.info(f"Starting PR notification side effects for {pr_id}")
         
         pdf_path = None
         try:
-            pdf_path = await generate_pr_doc(new_pr_id)
-            logger.info(f"PDF generated successfully for {new_pr_id} at {pdf_path}")
+            pdf_path = await generate_pr_doc(pr_id)
+            logger.info(f"PDF generated successfully for {pr_id} at {pdf_path}")
         except Exception as pdf_err:
-            logger.error(f"Failed to generate PDF for {new_pr_id}: {pdf_err}")
+            logger.error(f"Failed to generate PDF for {pr_id}: {pdf_err}")
 
         # Determine notification recipients
         officer_df = db.extract("user", conditions={"user_id": user_id}) if user_id else pd.DataFrame()
@@ -172,25 +181,23 @@ async def create_pr(user_id: str | None, proc_item: list[dict], justification: s
                     quick_send(
                         template_type="PURCHASE_REQUEST",
                         recipient_email=manager_emails,
-                        subject=f"Action Required: New Purchase Request {new_pr_id}",
+                        subject=f"Action Required: New Purchase Request {pr_id}",
                         cc_emails=[officer_email] if officer_email else None,
                         attachments=[pdf_path] if pdf_path else None,
-                        doc_id=new_pr_id,
+                        doc_id=pr_id,
                         officer_name=officer_name,
                         item_count=item_count,
                     )
-                    logger.info(f"Email notification sent for {new_pr_id}")
+                    logger.info(f"Email notification sent for {pr_id}")
                 except Exception as email_err:
-                    logger.error(f"Failed to send email notification for {new_pr_id}: {email_err}")
+                    logger.error(f"Failed to send email notification for {pr_id}: {email_err}")
             else:
                 logger.warning(f"No manager emails found for role_id {manager_role_id}")
         else:
             logger.warning("Role 'Procurement Manager' not found in dim_role table")
             
     except Exception as general_err:
-        logger.error(f"Unexpected error in PR notification logic for {new_pr_id}: {general_err}")
-
-    return {"pr_id": new_pr_id, "status": status_id, "items": bridge_data}
+        logger.error(f"Unexpected error in PR notification logic for {pr_id}: {general_err}")
 
 
 def accept_pr_suggestion(pr_id: str | None, officer_id: str | None) -> str:
@@ -258,6 +265,77 @@ def modify_pr(user_id: str | None, pr_id: str | None, proc_item: list[dict], jus
     if new_bridge:
         db.load("purchase_item_bridge", pd.DataFrame(new_bridge), mode="append")
     return f"PR {pr_id} updated successfully."
+
+
+async def resubmit_pr(user_id: str | None, pr_id: str | None, proc_item: list[dict], justification: str | None):
+    """
+    Allows resubmitting a rejected PR. Updates items and justification,
+    and sets status back to 'Pending for Approval' (Status 2).
+    """
+    pr = db.extract("purchase_request", conditions={"pr_id": pr_id})
+    if pr.empty:
+        raise NotFoundException("Error: PR not found.")
+
+    current_status = int(pr.iloc[0]["status_id"]) if "status_id" in pr.columns else 0
+    if current_status != 3: # 3 = Rejected
+        raise BadRequestException(f"Error: Only rejected PRs (Status 3) can be resubmitted. Current status: {current_status}")
+
+    now_ts = get_now()
+    updates = {
+        "status_id": 2, # Back to Pending for Approval
+        "justification": justification,
+        "last_modified_at": now_ts,
+        "last_modified_by": user_id,
+        "reviewed_at": None,
+        "reviewed_by": None,
+    }
+
+    full_df = db.extract("purchase_request")
+    if not full_df.empty:
+        for col in ["justification", "reviewed_at", "reviewed_by", "created_by", "last_modified_by"]:
+            if col in full_df.columns:
+                full_df[col] = full_df[col].astype(object)
+
+        mask = full_df["pr_id"] == pr_id
+        for col, val in updates.items():
+            full_df.loc[mask, col] = val
+        db.load("purchase_request", full_df, mode="overwrite")
+
+    # Update items
+    db.delete("purchase_item_bridge", {"doc_id": pr_id})
+    item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
+    
+    aggregated_items = {}
+    for item_dict in proc_item:
+        for name, qty in item_dict.items():
+            aggregated_items[name] = aggregated_items.get(name, 0) + qty
+
+    bridge_data = []
+    for name, qty in aggregated_items.items():
+        match = item_master[item_master["item_name"] == name]
+        if not match.empty:
+            item_row = match.iloc[0]
+            bridge_data.append(
+                {
+                    "doc_id": pr_id, 
+                    "item_id": item_row["item_id"], 
+                    "item_name": item_row["item_name"],
+                    "quantity": qty,
+                    "unit_price": item_row.get("unit_price")
+                }
+            )
+
+    if bridge_data:
+        load_data = pd.DataFrame([
+            {"doc_id": d["doc_id"], "item_id": d["item_id"], "quantity": d["quantity"]}
+            for d in bridge_data
+        ])
+        db.load("purchase_item_bridge", load_data, mode="append")
+
+    # Re-trigger notifications
+    await _trigger_pr_notifications(pr_id, user_id, aggregated_items)
+
+    return {"pr_id": pr_id, "status": 2, "items": bridge_data}
 
 
 def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
