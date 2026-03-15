@@ -77,7 +77,7 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
 
 
 def create_pr(user_id: str | None, proc_item: list[dict], justification: str | None):
-    item_master = db.extract("item", fields=["item_id", "item_name"])
+    item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
     
     aggregated_items = {}
     for item_dict in proc_item:
@@ -116,12 +116,24 @@ def create_pr(user_id: str | None, proc_item: list[dict], justification: str | N
     for name, qty in aggregated_items.items():
         match = item_master[item_master["item_name"] == name]
         if not match.empty:
+            item_row = match.iloc[0]
             bridge_data.append(
-                {"doc_id": new_pr_id, "item_id": match.iloc[0]["item_id"], "quantity": qty}
+                {
+                    "doc_id": new_pr_id, 
+                    "item_id": item_row["item_id"], 
+                    "item_name": item_row["item_name"],
+                    "quantity": qty,
+                    "unit_price": item_row.get("unit_price")
+                }
             )
 
     if bridge_data:
-        db.load("purchase_item_bridge", pd.DataFrame(bridge_data), mode="append")
+        # Prepare load_data excluding extra keys
+        load_data = pd.DataFrame([
+            {"doc_id": d["doc_id"], "item_id": d["item_id"], "quantity": d["quantity"]}
+            for d in bridge_data
+        ])
+        db.load("purchase_item_bridge", load_data, mode="append")
 
     return {"pr_id": new_pr_id, "status": status_id, "items": bridge_data}
 
@@ -245,7 +257,12 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         pr_df = pr_df.drop(columns=["name"])
 
     pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
-    return pr_df.to_dict(orient="records")
+    records = pr_df.to_dict(orient="records")
+    for r in records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+    return records
 
 
 def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | None = None):
@@ -335,7 +352,22 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
     header_df = format_timestamps_to_gmt8(header_df, ["created_at", "last_modified_at", "reviewed_at"])
 
     items = db.extract("purchase_item_bridge", conditions={"doc_id": pr_id})
-    return {"header": header_df.iloc[0].to_dict(), "items": items.to_dict(orient="records")}
+    if not items.empty:
+        item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
+        items = items.merge(item_master, on="item_id", how="left")
+        
+    header_record = header_df.iloc[0].to_dict()
+    for k, v in header_record.items():
+        if pd.isna(v):
+            header_record[k] = None
+            
+    items_records = items.to_dict(orient="records") if not items.empty else []
+    for r in items_records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+                
+    return {"header": header_record, "items": items_records}
 
 
 def review_pr(pr_id: str | None, decision: str | None, manager_id: str | None):
