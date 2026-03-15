@@ -54,7 +54,7 @@ def count_inventory(query: str | None = None):
 
 
 def get_graph_datapoint(item_name: str, year: int, month: int):
-    now = get_now()
+    now = pd.to_datetime(get_now())
     current_year = now.year
     current_month = now.month
     
