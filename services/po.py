@@ -137,8 +137,12 @@ def get_po_ticket(user_id: str | None):
     cols = ["po_id", "pr_id", "status", "status_name", "created_at", "creator_role"]
     result = merged_df[[c for c in cols if c in merged_df.columns]]
     result = format_timestamps_to_gmt8(result, ["created_at"])
-    return result.to_dict(orient="records")
-
+    records = result.to_dict(orient="records")
+    for r in records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+    return records
 
 def get_po_details(user_id: str | None, po_id: str | None):
     role = gatekeeper.get_user_role(user_id)
@@ -190,6 +194,9 @@ def get_po_details(user_id: str | None, po_id: str | None):
     po_header_df = format_timestamps_to_gmt8(po_header_df, ["created_at"])
 
     po_details = po_header_df.iloc[0].to_dict()
+    for k, v in po_details.items():
+        if pd.isna(v):
+            po_details[k] = None
 
     # Supplier Details
     supplier_df = db.extract("supplier", conditions={"supplier_id": po_data["supplier_id"]})
@@ -216,9 +223,14 @@ def get_po_details(user_id: str | None, po_id: str | None):
     item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
     details_df = bridge_df.merge(item_master, on="item_id", how="left")
 
-    po_details["items"] = details_df[["item_id", "item_name", "quantity", "unit_price"]].to_dict(
+    items_records = details_df[["item_id", "item_name", "quantity", "unit_price"]].to_dict(
         orient="records"
     )
+    for r in items_records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+    po_details["items"] = items_records
     return po_details
 
 

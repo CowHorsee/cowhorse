@@ -230,7 +230,12 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         pr_df = pr_df.drop(columns=["user_id"])
 
     pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
-    return pr_df.to_dict(orient="records")
+    records = pr_df.to_dict(orient="records")
+    for r in records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+    return records
 
 
 def get_pr_ticket(user_id: str | None, pr_id: str | None = None, status: str | None = None):
@@ -293,7 +298,19 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
     if not items.empty:
         item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
         items = items.merge(item_master, on="item_id", how="left")
-    return {"header": header_df.iloc[0].to_dict(), "items": items.to_dict(orient="records")}
+        
+    header_record = header_df.iloc[0].to_dict()
+    for k, v in header_record.items():
+        if pd.isna(v):
+            header_record[k] = None
+            
+    items_records = items.to_dict(orient="records") if not items.empty else []
+    for r in items_records:
+        for k, v in r.items():
+            if pd.isna(v):
+                r[k] = None
+                
+    return {"header": header_record, "items": items_records}
 
 
 def review_pr(pr_id: str | None, decision: str | None, manager_id: str | None):
