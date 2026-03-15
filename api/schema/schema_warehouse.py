@@ -15,3 +15,7 @@ class CountInventoryResponse(BaseResponse):
 
 class UpdateInventoryResponse(BaseResponse):
     data: str
+
+
+class GraphDatapointResponse(BaseResponse):
+    data: dict[str, Any]

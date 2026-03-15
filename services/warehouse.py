@@ -1,5 +1,6 @@
 import os
 import io
+import random
 
 import pandas as pd
 
@@ -50,4 +51,45 @@ def count_inventory(query: str | None = None):
         return result[["item_id", "item_name", "quantity", "unit_price"]].to_dict(orient="records")
 
     return merged_df[["item_id", "item_name", "quantity", "unit_price"]].to_dict(orient="records")
+
+
+def get_graph_datapoint(item_name: str, year: int, month: int):
+    now = get_now()
+    current_year = now.year
+    current_month = now.month
+    
+    if year > current_year or (year == current_year and month > current_month):
+        raise BadRequestException("Error: Cannot predict demand for future months beyond the current month.")
+
+    # 1. Get warehouse inventory count
+    inventory_items = count_inventory(query=item_name)
+    count_in_warehouse = 0
+    actual_item_name = item_name
+    if inventory_items:
+        # Assuming the first match is the desired item
+        count_in_warehouse = inventory_items[0].get("quantity", 0)
+        actual_item_name = inventory_items[0].get("item_name", item_name)
+
+    # 2. Predicted Demand (random for now based on item, year, month)
+    random.seed(f"predict_{actual_item_name}_{year}_{month}")
+    predicted_demand = random.randint(10, 200)
+
+    response = {
+        "item_name": actual_item_name,
+        "year": year,
+        "month": month,
+        "inventory_count": count_in_warehouse,
+        "predicted_demand": predicted_demand,
+    }
+
+    # 3. Actual sales logic
+    is_past_month = (year < current_year) or (year == current_year and month < current_month)
+    
+    if is_past_month:
+        # Dummy actual sales for past months (e.g. Jan, Feb 2026)
+        random.seed(f"actual_{actual_item_name}_{year}_{month}")
+        actual_sales = random.randint(5, int(predicted_demand * 1.5))
+        response["actual_sales"] = actual_sales
+        
+    return response
 
