@@ -117,21 +117,24 @@ def get_po_ticket(user_id: str | None):
     status_df["status_id"] = status_df["status_id"].astype(str)
     merged_df = po_df.merge(status_df, left_on="status", right_on="status_id", how="left")
 
-    user_df = db.extract("user", fields=["user_id", "role_id"])
+    user_df = db.extract("user", fields=["user_id", "role_id", "name"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
 
     merged_df = merged_df.merge(
-        user_with_role[["user_id", "role_name"]],
+        user_with_role[["user_id", "role_name", "name"]],
         left_on="created_by",
         right_on="user_id",
         how="left",
     )
     merged_df = merged_df.rename(columns={"role_name": "creator_role"})
+    merged_df["created_by"] = merged_df["name"].where(merged_df["name"].notna(), merged_df["created_by"])
     if "user_id" in merged_df.columns:
         merged_df = merged_df.drop(columns=["user_id"])
+    if "name" in merged_df.columns:
+        merged_df = merged_df.drop(columns=["name"])
 
     # Ensure pr_id is included in the output
     cols = ["po_id", "pr_id", "status", "status_name", "created_at", "creator_role"]
@@ -187,6 +190,7 @@ def get_po_details(user_id: str | None, po_id: str | None):
         how="left",
     )
     po_header_df = po_header_df.rename(columns={"role_name": "creator_role", "name": "officer_name", "email": "officer_email"})
+    po_header_df["created_by"] = po_header_df["officer_name"].where(po_header_df["officer_name"].notna(), po_header_df["created_by"])
     po_header_df = format_timestamps_to_gmt8(po_header_df, ["created_at"])
 
     po_details = po_header_df.iloc[0].to_dict()

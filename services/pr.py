@@ -202,20 +202,47 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
     status_df["status_id"] = status_df["status_id"].astype(str)
     pr_df = pr_df.merge(status_df[["status_id", "status_name"]], on="status_id", how="left")
 
-    user_df = db.extract("user", fields=["user_id", "role_id"])
+    user_df = db.extract("user", fields=["user_id", "role_id", "name"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
     pr_df = pr_df.merge(
-        user_with_role[["user_id", "role_name"]],
+        user_with_role[["user_id", "role_name", "name"]],
         left_on="created_by",
         right_on="user_id",
         how="left",
     )
     pr_df = pr_df.rename(columns={"role_name": "creator_role"})
+    pr_df["created_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["created_by"])
     if "user_id" in pr_df.columns:
         pr_df = pr_df.drop(columns=["user_id"])
+    if "name" in pr_df.columns:
+        pr_df = pr_df.drop(columns=["name"])
+
+    pr_df = pr_df.merge(
+        user_df[["user_id", "name"]],
+        left_on="last_modified_by",
+        right_on="user_id",
+        how="left",
+    )
+    pr_df["last_modified_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["last_modified_by"])
+    if "user_id" in pr_df.columns:
+        pr_df = pr_df.drop(columns=["user_id"])
+    if "name" in pr_df.columns:
+        pr_df = pr_df.drop(columns=["name"])
+
+    pr_df = pr_df.merge(
+        user_df[["user_id", "name"]],
+        left_on="reviewed_by",
+        right_on="user_id",
+        how="left",
+    )
+    pr_df["reviewed_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["reviewed_by"])
+    if "user_id" in pr_df.columns:
+        pr_df = pr_df.drop(columns=["user_id"])
+    if "name" in pr_df.columns:
+        pr_df = pr_df.drop(columns=["name"])
 
     pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
     return pr_df.to_dict(orient="records")
@@ -263,18 +290,48 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
     status_df["status_id"] = status_df["status_id"].astype(str)
     header_df = header_df.merge(status_df[["status_id", "status_name"]], on="status_id", how="left")
 
-    user_df = db.extract("user", fields=["user_id", "role_id"])
+    user_df = db.extract("user", fields=["user_id", "role_id", "name"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
     header_df = header_df.merge(
-        user_with_role[["user_id", "role_name"]],
+        user_with_role[["user_id", "role_name", "name"]],
         left_on="created_by",
         right_on="user_id",
         how="left",
     )
     header_df = header_df.rename(columns={"role_name": "creator_role"})
+    header_df["created_by"] = header_df["name"].where(header_df["name"].notna(), header_df["created_by"])
+    if "user_id" in header_df.columns:
+        header_df = header_df.drop(columns=["user_id"])
+    if "name" in header_df.columns:
+        header_df = header_df.drop(columns=["name"])
+
+    header_df = header_df.merge(
+        user_df[["user_id", "name"]],
+        left_on="last_modified_by",
+        right_on="user_id",
+        how="left",
+    )
+    header_df["last_modified_by"] = header_df["name"].where(header_df["name"].notna(), header_df["last_modified_by"])
+    if "user_id" in header_df.columns:
+        header_df = header_df.drop(columns=["user_id"])
+    if "name" in header_df.columns:
+        header_df = header_df.drop(columns=["name"])
+
+    header_df = header_df.merge(
+        user_df[["user_id", "name"]],
+        left_on="reviewed_by",
+        right_on="user_id",
+        how="left",
+    )
+    header_df["reviewed_by"] = header_df["name"].where(header_df["name"].notna(), header_df["reviewed_by"])
+    if "user_id" in header_df.columns:
+        header_df = header_df.drop(columns=["user_id"])
+    if "name" in header_df.columns:
+        header_df = header_df.drop(columns=["name"])
+
     header_df = format_timestamps_to_gmt8(header_df, ["created_at", "last_modified_at", "reviewed_at"])
 
     items = db.extract("purchase_item_bridge", conditions={"doc_id": pr_id})
