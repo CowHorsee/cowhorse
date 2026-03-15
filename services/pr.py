@@ -227,10 +227,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
     )
     pr_df = pr_df.rename(columns={"role_name": "creator_role"})
     pr_df["created_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["created_by"])
-    if "user_id" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["user_id"])
-    if "name" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["name"])
+    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
 
     pr_df = pr_df.merge(
         user_df[["user_id", "name"]],
@@ -239,10 +236,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         how="left",
     )
     pr_df["last_modified_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["last_modified_by"])
-    if "user_id" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["user_id"])
-    if "name" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["name"])
+    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
 
     pr_df = pr_df.merge(
         user_df[["user_id", "name"]],
@@ -251,10 +245,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         how="left",
     )
     pr_df["reviewed_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["reviewed_by"])
-    if "user_id" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["user_id"])
-    if "name" in pr_df.columns:
-        pr_df = pr_df.drop(columns=["name"])
+    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
 
     pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
     records = pr_df.to_dict(orient="records")
@@ -320,10 +311,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
     )
     header_df = header_df.rename(columns={"role_name": "creator_role"})
     header_df["created_by"] = header_df["name"].where(header_df["name"].notna(), header_df["created_by"])
-    if "user_id" in header_df.columns:
-        header_df = header_df.drop(columns=["user_id"])
-    if "name" in header_df.columns:
-        header_df = header_df.drop(columns=["name"])
+    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
 
     header_df = header_df.merge(
         user_df[["user_id", "name"]],
@@ -332,10 +320,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
         how="left",
     )
     header_df["last_modified_by"] = header_df["name"].where(header_df["name"].notna(), header_df["last_modified_by"])
-    if "user_id" in header_df.columns:
-        header_df = header_df.drop(columns=["user_id"])
-    if "name" in header_df.columns:
-        header_df = header_df.drop(columns=["name"])
+    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
 
     header_df = header_df.merge(
         user_df[["user_id", "name"]],
@@ -344,10 +329,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
         how="left",
     )
     header_df["reviewed_by"] = header_df["name"].where(header_df["name"].notna(), header_df["reviewed_by"])
-    if "user_id" in header_df.columns:
-        header_df = header_df.drop(columns=["user_id"])
-    if "name" in header_df.columns:
-        header_df = header_df.drop(columns=["name"])
+    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
 
     header_df = format_timestamps_to_gmt8(header_df, ["created_at", "last_modified_at", "reviewed_at"])
 
