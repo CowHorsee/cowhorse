@@ -36,48 +36,18 @@ router = APIRouter(prefix="/pr", tags=["Purchase Request"])
 
 @router.post("/create_pr", response_model=CreatePRAPIResponse, responses=ERROR_RESPONSES)
 async def api_create_pr(body: CreatePRRequest):
-    result = create_pr(body.user_id, body.proc_item, body.justification)
-
-    if isinstance(result, dict) and "pr_id" in result:
-        pr_id = str(result["pr_id"])
-        try:
-            pdf_path = await generate_pr_doc(pr_id)
-            db = DBHelper()
-            officer_df = db.extract("user", conditions={"user_id": body.user_id})
-            officer_email = officer_df.iloc[0]["email"] if not officer_df.empty else None
-            officer_name = officer_df.iloc[0]["name"] if not officer_df.empty else "Officer"
-
-            roles = db.extract("dim_role", conditions={"role_name": "Procurement Manager"})
-            if not roles.empty:
-                manager_role_id = roles.iloc[0]["role_id"]
-                managers = db.extract("user", conditions={"role_id": int(manager_role_id)})
-                manager_emails = managers["email"].tolist() if not managers.empty else []
-                if manager_emails:
-                    item_count = sum(sum(d.values()) for d in body.proc_item)
-                    quick_send(
-                        template_type="PURCHASE_REQUEST",
-                        recipient_email=manager_emails,
-                        subject=f"Action Required: New Purchase Request {pr_id}",
-                        cc_emails=[officer_email] if officer_email else None,
-                        attachments=[pdf_path] if pdf_path else None,
-                        doc_id=pr_id,
-                        officer_name=officer_name,
-                        item_count=item_count,
-                    )
-        except Exception as pdf_err:
-            logging.error(f"Failed to generate/send PR PDF/Email: {pdf_err}")
-
+    result = await create_pr(body.user_id, body.proc_item, body.justification)
     return success_response(message="Purchase request created successfully", data=result)
 
 
 @router.post("/accept_pr_suggestion", response_model=AcceptPRSuggestionResponse, responses=ERROR_RESPONSES)
-def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
+async def api_accept_pr_suggestion(body: AcceptPRSuggestionRequest):
     result = accept_pr_suggestion(body.pr_id, body.officer_id)
     return success_response(message=result, data=result)
 
 
 @router.post("/modify_pr", response_model=ModifyPRResponse, responses=ERROR_RESPONSES)
-def api_modify_pr(body: ModifyPRRequest):
+async def api_modify_pr(body: ModifyPRRequest):
     result = modify_pr(body.user_id, body.pr_id, body.proc_item, body.justification)
     return success_response(message=result, data=result)
 
@@ -125,8 +95,8 @@ def api_review_pr(body: ReviewPRRequest):
     responses=ERROR_RESPONSES,
     description="Endpoint to trigger procurement alert based on predicted demand. Used by Foundry AI agent to trigger when certain demand thresholds are met."
 )             
-def api_procurement_alert(body: ProcurementAlertRequest):
-    result = procurement_alert(body.item_name, body.predicted_demand, body.justification)
+async def api_procurement_alert(body: ProcurementAlertRequest):
+    result = await procurement_alert(body.item_name, body.predicted_demand, body.justification)
     if isinstance(result, str):
         return success_response(message=result, data=result)
     return success_response(message="Procurement alert processed successfully", data=result)

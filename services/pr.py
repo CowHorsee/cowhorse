@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 import pandas as pd
 import numpy as np
@@ -6,6 +7,7 @@ import numpy as np
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
 from services.sharedlib.email_helper import quick_send
+from services.sharedlib.pdf_helper.pdf_helper import generate_pr_doc
 from services.sharedlib.exceptions import (
     BadRequestException,
     ForbiddenException,
@@ -36,7 +38,7 @@ def generate_next_pr_id() -> str:
     return f"{prefix}{(last_num + 1):05d}"
 
 
-def procurement_alert(item_name: str | None, predicted_demand, justification: str | None):
+async def procurement_alert(item_name: str | None, predicted_demand, justification: str | None):
     # Early validation: Check if item exists in item master
     item_master = db.extract("item", fields=["item_name"])
     if not item_name or item_master[item_master["item_name"].str.lower() == item_name.lower()].empty:
@@ -54,7 +56,7 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
 
     if item_name and (float(predicted_demand) * THRESHOLD_PERCENTAGE) > current_stock:
         proc_item = [{item_name: int(float(predicted_demand) - current_stock)}]
-        result = create_pr(user_id=None, proc_item=proc_item, justification=justification)
+        result = await create_pr(user_id=None, proc_item=proc_item, justification=justification)
 
         if isinstance(result, dict) and "pr_id" in result:
             roles = db.extract("dim_role", conditions={"role_name": "Procurement Officer"})
@@ -77,7 +79,7 @@ def procurement_alert(item_name: str | None, predicted_demand, justification: st
     return "Stock level sufficient. No PR triggered."
 
 
-def create_pr(user_id: str | None, proc_item: list[dict], justification: str | None):
+async def create_pr(user_id: str | None, proc_item: list[dict], justification: str | None):
     item_master = db.extract("item", fields=["item_id", "item_name", "unit_price"])
     
     aggregated_items = {}
@@ -135,6 +137,35 @@ def create_pr(user_id: str | None, proc_item: list[dict], justification: str | N
             for d in bridge_data
         ])
         db.load("purchase_item_bridge", load_data, mode="append")
+
+    # --- Side-effects: PDF Generation and Email Notification ---
+    try:
+        pdf_path = await generate_pr_doc(new_pr_id)
+        
+        # Determine notification recipients
+        officer_df = db.extract("user", conditions={"user_id": user_id}) if user_id else pd.DataFrame()
+        officer_email = officer_df.iloc[0]["email"] if not officer_df.empty else None
+        officer_name = officer_df.iloc[0]["name"] if not officer_df.empty else "Officer"
+
+        roles = db.extract("dim_role", conditions={"role_name": "Procurement Manager"})
+        if not roles.empty:
+            manager_role_id = roles.iloc[0]["role_id"]
+            managers = db.extract("user", conditions={"role_id": int(manager_role_id)})
+            manager_emails = managers["email"].tolist() if not managers.empty else []
+            if manager_emails:
+                item_count = sum(aggregated_items.values())
+                quick_send(
+                    template_type="PURCHASE_REQUEST",
+                    recipient_email=manager_emails,
+                    subject=f"Action Required: New Purchase Request {new_pr_id}",
+                    cc_emails=[officer_email] if officer_email else None,
+                    attachments=[pdf_path] if pdf_path else None,
+                    doc_id=new_pr_id,
+                    officer_name=officer_name,
+                    item_count=item_count,
+                )
+    except Exception as e:
+        logging.error(f"Failed to trigger PR notifications for {new_pr_id}: {e}")
 
     return {"pr_id": new_pr_id, "status": status_id, "items": bridge_data}
 
