@@ -23,7 +23,7 @@ class ModifyPRRequest(BaseModel):
 
 class ReviewPRRequest(BaseModel):
     pr_id: str
-    decision: str = Field(..., description="Decision made by the manager. Accepts 'approve', 'approved', 'accept', or 'accepted' to approve. Any other value will reject the PR.")
+    decision: str = Field(..., description="Decision made by the manager. Accepts exactly 'approve' or 'reject'.")
     manager_id: str
 
 

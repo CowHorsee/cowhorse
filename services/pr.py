@@ -381,10 +381,12 @@ def review_pr(pr_id: str | None, decision: str | None, manager_id: str | None):
         raise BadRequestException("Error: PR is not in a 'Pending Review' state.")
 
     decision_lower = (decision or "").lower()
-    if decision_lower in ("approve", "approved", "accept", "accepted"):
+    if decision_lower == "approve":
         status_code = 4
-    else:
+    elif decision_lower == "reject":
         status_code = 3
+    else:
+        raise BadRequestException("Error: Decision must be exactly 'approve' or 'reject'.")
     updates = {"status_id": status_code, "reviewed_at": get_now(), "reviewed_by": manager_id}
 
     full_df = db.extract("purchase_request")

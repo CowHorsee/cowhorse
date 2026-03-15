@@ -112,7 +112,7 @@ def api_get_pr_details(user_id: str = Query(...), pr_id: str = Query(...)):
     "/review_pr", 
     response_model=ReviewPRResponse, 
     responses=ERROR_RESPONSES,
-    description="Endpoint for managers to review a purchase request. Pass exactly 'approve', 'approved', 'accept', or 'accepted' in the decision field to approve it. Any other text will reject it."
+    description="Endpoint for managers to review a purchase request. Pass exactly 'approve' in the decision field to approve it, or 'reject' to reject it."
 )
 def api_review_pr(body: ReviewPRRequest):
     result = review_pr(body.pr_id, body.decision, body.manager_id)
