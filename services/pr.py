@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pandas as pd
+import numpy as np
 
 from services.sharedlib.rbac_helper.rbac_helper import RBACGatekeeper
 from services.sharedlib.db_helper.db_helper import DBHelper, get_now, format_timestamps_to_gmt8
@@ -216,10 +217,13 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
 
     user_df = db.extract("user", fields=["user_id", "role_id", "name"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
-    user_df["role_id"] = user_df["role_id"].astype(str)
-    role_df["role_id"] = role_df["role_id"].astype(str)
+    user_df["user_id"] = user_df["user_id"].astype(str).replace("nan", np.nan)
+    user_df["role_id"] = user_df["role_id"].astype(str).replace("nan", np.nan)
+    role_df["role_id"] = role_df["role_id"].astype(str).replace("nan", np.nan)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
+    
     if "created_by" in pr_df.columns:
+        pr_df["created_by"] = pr_df["created_by"].astype(str).replace("nan", np.nan)
         pr_df = pr_df.merge(
             user_with_role[["user_id", "role_name", "name"]].rename(columns={"name": "creator_name"}),
             left_on="created_by",
@@ -233,6 +237,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         pr_df["creator_role"] = None
 
     if "last_modified_by" in pr_df.columns:
+        pr_df["last_modified_by"] = pr_df["last_modified_by"].astype(str).replace("nan", np.nan)
         pr_df = pr_df.merge(
             user_df[["user_id", "name"]].rename(columns={"name": "modifier_name"}),
             left_on="last_modified_by",
@@ -243,6 +248,7 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
         pr_df = pr_df.drop(columns=["user_id", "modifier_name"], errors="ignore")
 
     if "reviewed_by" in pr_df.columns:
+        pr_df["reviewed_by"] = pr_df["reviewed_by"].astype(str).replace("nan", np.nan)
         pr_df = pr_df.merge(
             user_df[["user_id", "name"]].rename(columns={"name": "reviewer_name"}),
             left_on="reviewed_by",
@@ -305,10 +311,13 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
 
     user_df = db.extract("user", fields=["user_id", "role_id", "name"])
     role_df = db.extract("dim_role", fields=["role_id", "role_name"])
-    user_df["role_id"] = user_df["role_id"].astype(str)
-    role_df["role_id"] = role_df["role_id"].astype(str)
+    user_df["user_id"] = user_df["user_id"].astype(str).replace("nan", np.nan)
+    user_df["role_id"] = user_df["role_id"].astype(str).replace("nan", np.nan)
+    role_df["role_id"] = role_df["role_id"].astype(str).replace("nan", np.nan)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
+    
     if "created_by" in header_df.columns:
+        header_df["created_by"] = header_df["created_by"].astype(str).replace("nan", np.nan)
         header_df = header_df.merge(
             user_with_role[["user_id", "role_name", "name"]].rename(columns={"name": "creator_name"}),
             left_on="created_by",
@@ -322,6 +331,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
         header_df["creator_role"] = None
 
     if "last_modified_by" in header_df.columns:
+        header_df["last_modified_by"] = header_df["last_modified_by"].astype(str).replace("nan", np.nan)
         header_df = header_df.merge(
             user_df[["user_id", "name"]].rename(columns={"name": "modifier_name"}),
             left_on="last_modified_by",
@@ -332,6 +342,7 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
         header_df = header_df.drop(columns=["user_id", "modifier_name"], errors="ignore")
 
     if "reviewed_by" in header_df.columns:
+        header_df["reviewed_by"] = header_df["reviewed_by"].astype(str).replace("nan", np.nan)
         header_df = header_df.merge(
             user_df[["user_id", "name"]].rename(columns={"name": "reviewer_name"}),
             left_on="reviewed_by",
