@@ -86,9 +86,23 @@ def get_graph_datapoint(item_name: str, year: int, month: int):
     is_past_month = (year < current_year) or (year == current_year and month < current_month)
     
     if is_past_month:
-        # Dummy actual sales for past months (e.g. Jan, Feb 2026)
-        random.seed(f"actual_{actual_item_name}_{year}_{month}")
-        actual_sales = random.randint(5, int(predicted_demand * 1.5))
+        # Dummy actual sales for past months (Jan, Feb 2026)
+        dummy_sales_data = {
+            "Elba Built-in Gas Hob": {1: 45, 2: 52},
+            "Haustern Kitchen Sink": {1: 30, 2: 28},
+            "Rubine Cooker Hood": {1: 65, 2: 58},
+            "Sorento Kitchen Faucet": {1: 20, 2: 25}
+        }
+        
+        # Get from dummy data or fallback to a deterministic value for other items
+        item_sales = dummy_sales_data.get(actual_item_name, {})
+        actual_sales = item_sales.get(month)
+        
+        if actual_sales is None:
+            # Fallback if not in dummy data
+            random.seed(f"actual_{actual_item_name}_{year}_{month}")
+            actual_sales = random.randint(5, int(predicted_demand * 1.2))
+            
         response["actual_sales"] = actual_sales
         
     return response
