@@ -13,6 +13,8 @@ async def generate_pdf(data: dict, output_path: str | None = None):
     env = Environment(loader=FileSystemLoader(str(template_dir)))
     template = env.get_template("pdf_template.html")
     html_content = template.render(**data)
+    
+    logging.info(f"Generating PDF for {data.get('doc_id')} (Type: {data.get('doc_type')})")
 
     from playwright.async_api import async_playwright
 
@@ -82,8 +84,9 @@ async def generate_pr_doc(pr_id: str):
         "officer_email": officer_email,
         "items": items,
     }
-    output_dir = Path(__file__).resolve().parents[4] / "document" / "pr"
+    output_dir = Path(__file__).resolve().parents[3] / "document" / "pr"
     output_path = str(output_dir / f"{pr_id}.pdf")
+    logging.info(f"Targeting PDF output at: {output_path}")
     return await generate_pdf(pdf_data, output_path=output_path)
 
 
@@ -113,8 +116,9 @@ async def generate_po_doc(po_id: str):
         "supplier_email": supplier_email,
         "items": items,
     }
-    output_dir = Path(__file__).resolve().parents[4] / "document" / "po"
+    output_dir = Path(__file__).resolve().parents[3] / "document" / "po"
     output_path = str(output_dir / f"{po_id}.pdf")
+    logging.info(f"Targeting PDF output at: {output_path}")
     return await generate_pdf(pdf_data, output_path=output_path)
 
 

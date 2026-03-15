@@ -14,6 +14,8 @@ from services.sharedlib.exceptions import (
     NotFoundException,
 )
 
+logger = logging.getLogger("cowhorse.services.pr")
+
 
 db = DBHelper()
 gatekeeper = RBACGatekeeper()
@@ -140,32 +142,53 @@ async def create_pr(user_id: str | None, proc_item: list[dict], justification: s
 
     # --- Side-effects: PDF Generation and Email Notification ---
     try:
-        pdf_path = await generate_pr_doc(new_pr_id)
+        logger.info(f"Starting post-PR-creation side effects for {new_pr_id}")
         
+        pdf_path = None
+        try:
+            pdf_path = await generate_pr_doc(new_pr_id)
+            logger.info(f"PDF generated successfully for {new_pr_id} at {pdf_path}")
+        except Exception as pdf_err:
+            logger.error(f"Failed to generate PDF for {new_pr_id}: {pdf_err}")
+
         # Determine notification recipients
         officer_df = db.extract("user", conditions={"user_id": user_id}) if user_id else pd.DataFrame()
         officer_email = officer_df.iloc[0]["email"] if not officer_df.empty else None
         officer_name = officer_df.iloc[0]["name"] if not officer_df.empty else "Officer"
 
         roles = db.extract("dim_role", conditions={"role_name": "Procurement Manager"})
+        logger.info(f"Found {len(roles)} roles matching 'Procurement Manager'")
+        
         if not roles.empty:
             manager_role_id = roles.iloc[0]["role_id"]
             managers = db.extract("user", conditions={"role_id": int(manager_role_id)})
             manager_emails = managers["email"].tolist() if not managers.empty else []
+            
+            logger.info(f"Found {len(manager_emails)} manager(s) to notify: {manager_emails}")
+            
             if manager_emails:
                 item_count = sum(aggregated_items.values())
-                quick_send(
-                    template_type="PURCHASE_REQUEST",
-                    recipient_email=manager_emails,
-                    subject=f"Action Required: New Purchase Request {new_pr_id}",
-                    cc_emails=[officer_email] if officer_email else None,
-                    attachments=[pdf_path] if pdf_path else None,
-                    doc_id=new_pr_id,
-                    officer_name=officer_name,
-                    item_count=item_count,
-                )
-    except Exception as e:
-        logging.error(f"Failed to trigger PR notifications for {new_pr_id}: {e}")
+                try:
+                    quick_send(
+                        template_type="PURCHASE_REQUEST",
+                        recipient_email=manager_emails,
+                        subject=f"Action Required: New Purchase Request {new_pr_id}",
+                        cc_emails=[officer_email] if officer_email else None,
+                        attachments=[pdf_path] if pdf_path else None,
+                        doc_id=new_pr_id,
+                        officer_name=officer_name,
+                        item_count=item_count,
+                    )
+                    logger.info(f"Email notification sent for {new_pr_id}")
+                except Exception as email_err:
+                    logger.error(f"Failed to send email notification for {new_pr_id}: {email_err}")
+            else:
+                logger.warning(f"No manager emails found for role_id {manager_role_id}")
+        else:
+            logger.warning("Role 'Procurement Manager' not found in dim_role table")
+            
+    except Exception as general_err:
+        logger.error(f"Unexpected error in PR notification logic for {new_pr_id}: {general_err}")
 
     return {"pr_id": new_pr_id, "status": status_id, "items": bridge_data}
 
