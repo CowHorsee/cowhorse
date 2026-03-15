@@ -219,33 +219,38 @@ def _enrich_pr_records(pr_df: pd.DataFrame) -> list[dict]:
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
-    pr_df = pr_df.merge(
-        user_with_role[["user_id", "role_name", "name"]],
-        left_on="created_by",
-        right_on="user_id",
-        how="left",
-    )
-    pr_df = pr_df.rename(columns={"role_name": "creator_role"})
-    pr_df["created_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["created_by"])
-    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "created_by" in pr_df.columns:
+        pr_df = pr_df.merge(
+            user_with_role[["user_id", "role_name", "name"]],
+            left_on="created_by",
+            right_on="user_id",
+            how="left",
+        )
+        pr_df = pr_df.rename(columns={"role_name": "creator_role"})
+        pr_df["created_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["created_by"])
+        pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
+    else:
+        pr_df["creator_role"] = None
 
-    pr_df = pr_df.merge(
-        user_df[["user_id", "name"]],
-        left_on="last_modified_by",
-        right_on="user_id",
-        how="left",
-    )
-    pr_df["last_modified_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["last_modified_by"])
-    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "last_modified_by" in pr_df.columns:
+        pr_df = pr_df.merge(
+            user_df[["user_id", "name"]],
+            left_on="last_modified_by",
+            right_on="user_id",
+            how="left",
+        )
+        pr_df["last_modified_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["last_modified_by"])
+        pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
 
-    pr_df = pr_df.merge(
-        user_df[["user_id", "name"]],
-        left_on="reviewed_by",
-        right_on="user_id",
-        how="left",
-    )
-    pr_df["reviewed_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["reviewed_by"])
-    pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "reviewed_by" in pr_df.columns:
+        pr_df = pr_df.merge(
+            user_df[["user_id", "name"]],
+            left_on="reviewed_by",
+            right_on="user_id",
+            how="left",
+        )
+        pr_df["reviewed_by"] = pr_df["name"].where(pr_df["name"].notna(), pr_df["reviewed_by"])
+        pr_df = pr_df.drop(columns=["user_id", "name"], errors="ignore")
 
     pr_df = format_timestamps_to_gmt8(pr_df, ["created_at", "last_modified_at", "reviewed_at"])
     records = pr_df.to_dict(orient="records")
@@ -303,33 +308,38 @@ def get_pr_details(user_id: str | None, pr_id: str | None):
     user_df["role_id"] = user_df["role_id"].astype(str)
     role_df["role_id"] = role_df["role_id"].astype(str)
     user_with_role = user_df.merge(role_df, on="role_id", how="left")
-    header_df = header_df.merge(
-        user_with_role[["user_id", "role_name", "name"]],
-        left_on="created_by",
-        right_on="user_id",
-        how="left",
-    )
-    header_df = header_df.rename(columns={"role_name": "creator_role"})
-    header_df["created_by"] = header_df["name"].where(header_df["name"].notna(), header_df["created_by"])
-    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "created_by" in header_df.columns:
+        header_df = header_df.merge(
+            user_with_role[["user_id", "role_name", "name"]],
+            left_on="created_by",
+            right_on="user_id",
+            how="left",
+        )
+        header_df = header_df.rename(columns={"role_name": "creator_role"})
+        header_df["created_by"] = header_df["name"].where(header_df["name"].notna(), header_df["created_by"])
+        header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
+    else:
+        header_df["creator_role"] = None
 
-    header_df = header_df.merge(
-        user_df[["user_id", "name"]],
-        left_on="last_modified_by",
-        right_on="user_id",
-        how="left",
-    )
-    header_df["last_modified_by"] = header_df["name"].where(header_df["name"].notna(), header_df["last_modified_by"])
-    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "last_modified_by" in header_df.columns:
+        header_df = header_df.merge(
+            user_df[["user_id", "name"]],
+            left_on="last_modified_by",
+            right_on="user_id",
+            how="left",
+        )
+        header_df["last_modified_by"] = header_df["name"].where(header_df["name"].notna(), header_df["last_modified_by"])
+        header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
 
-    header_df = header_df.merge(
-        user_df[["user_id", "name"]],
-        left_on="reviewed_by",
-        right_on="user_id",
-        how="left",
-    )
-    header_df["reviewed_by"] = header_df["name"].where(header_df["name"].notna(), header_df["reviewed_by"])
-    header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
+    if "reviewed_by" in header_df.columns:
+        header_df = header_df.merge(
+            user_df[["user_id", "name"]],
+            left_on="reviewed_by",
+            right_on="user_id",
+            how="left",
+        )
+        header_df["reviewed_by"] = header_df["name"].where(header_df["name"].notna(), header_df["reviewed_by"])
+        header_df = header_df.drop(columns=["user_id", "name"], errors="ignore")
 
     header_df = format_timestamps_to_gmt8(header_df, ["created_at", "last_modified_at", "reviewed_at"])
 
