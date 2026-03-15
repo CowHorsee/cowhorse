@@ -89,9 +89,20 @@ def get_graph_datapoint(item_name: str, year: int, month: int):
         # Dummy actual sales for past months (Jan, Feb 2026)
         dummy_sales_data = {
             "Elba Built-in Gas Hob": {1: 45, 2: 52},
+            "Faber Chimney Hood": {1: 88, 2: 95},
+            "Rubine Electric Oven": {1: 15, 2: 12},
             "Haustern Kitchen Sink": {1: 30, 2: 28},
-            "Rubine Cooker Hood": {1: 65, 2: 58},
-            "Sorento Kitchen Faucet": {1: 20, 2: 25}
+            "Tuscani Wine Chiller": {1: 5, 2: 8},
+            "Ceiling Fan 56-inch": {1: 40, 2: 35},
+            "Instant Water Heater": {1: 22, 2: 18},
+            "Freestanding Dishwasher": {1: 10, 2: 14},
+            "Smart Air Purifier": {1: 12, 2: 9},
+            "Induction Cooker": {1: 25, 2: 30},
+            "Microwave Oven 25L": {1: 18, 2: 20},
+            "Refrigerator Side-by-Side": {1: 7, 2: 11},
+            "Digital Door Lock": {1: 33, 2: 29},
+            "Rubine Cooker Hood": {1: 65, 2: 58},      # Original dummy data
+            "Sorento Kitchen Faucet": {1: 20, 2: 25}    # Original dummy data
         }
         
         # Get from dummy data or fallback to a deterministic value for other items
