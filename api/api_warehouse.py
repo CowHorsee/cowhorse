@@ -36,7 +36,7 @@ def api_update_inventory(body: UpdateInventoryRequest):
 def api_get_graph_datapoint(
     item_name: str = Query(..., description="Name of the item to query"),
     year: int = Query(..., ge=2026, description="Year to query (e.g. 2026)"),
-    month: int = Query(..., ge=1, le=12, description="Month to query (1-12)")
+    month: int | None = Query(default=None, ge=1, le=12, description="Month to query (1-12). If not provided, returns Jan to current month.")
 ):
     return success_response(
         message="Graph datapoint retrieved successfully",

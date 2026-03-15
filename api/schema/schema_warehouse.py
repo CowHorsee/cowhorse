@@ -18,4 +18,4 @@ class UpdateInventoryResponse(BaseResponse):
 
 
 class GraphDatapointResponse(BaseResponse):
-    data: dict[str, Any]
+    data: list[dict[str, Any]]
