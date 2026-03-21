@@ -56,7 +56,7 @@ def api_register(body: RegisterRequest):
 
 @router.post("/forget_password", response_model=ForgetPasswordResponse, responses=ERROR_RESPONSES)
 def api_forget_password(body: ForgetPasswordRequest):
-    result = forget_password(body.user_id)
+    result = forget_password(body.email)
     return success_response(message=result, data=result)
 
 

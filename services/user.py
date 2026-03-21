@@ -97,19 +97,21 @@ def register(
     return "Registration Successful"
 
 
-def forget_password(user_id: str | None):
-    user_df = db.extract("user", conditions={"user_id": user_id})
+def forget_password(email: str | None):
+    user_df = db.extract("user", conditions={"email": email})
     if user_df.empty:
-        raise NotFoundException("Error: User not found.")
+        raise NotFoundException("Error: Email not found.")
+
+    user_data = user_df.iloc[0]
+    user_id = user_data["user_id"]
 
     new_raw_pw = str(uuid.uuid4())[:8]
     new_hash = bcrypt.hashpw(new_raw_pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     db.modify("user", {"password_hash": new_hash, "last_modified_timestamp": get_now()}, {"user_id": user_id})
 
-    user_email = user_df.iloc[0]["email"]
     quick_send(
         template_type="FORGET_PASSWORD",
-        recipient_email=user_email,
+        recipient_email=email,
         subject="Password Reset - Team Cow Horse",
         user_id=user_id,
         temp_password=new_raw_pw,

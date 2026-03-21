@@ -17,7 +17,7 @@ class RegisterRequest(BaseModel):
 
 
 class ForgetPasswordRequest(BaseModel):
-    user_id: str
+    email: str
 
 
 class ModifyRoleRequest(BaseModel):
